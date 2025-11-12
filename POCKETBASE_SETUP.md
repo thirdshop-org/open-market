@@ -114,6 +114,45 @@ Ces champs s'ajoutent aux champs par défaut de PocketBase (username, email, pas
 
 ---
 
+### 3. Collection `messages` (Messagerie)
+
+**Type:** Base collection
+
+**Champs:**
+
+| Nom | Type | Options |
+|-----|------|---------|
+| `sender` | Relation | Required, Collection: `users`, Max select: 1 |
+| `receiver` | Relation | Required, Collection: `users`, Max select: 1 |
+| `product` | Relation | Required, Collection: `products`, Max select: 1 |
+| `content` | Text | Required, Min: 1, Max: 2000 |
+| `isRead` | Bool | Required, Default: false |
+
+**Règles d'accès:**
+```javascript
+// List/View
+sender.id = @request.auth.id || receiver.id = @request.auth.id
+
+// Create
+@request.auth.id != "" && 
+@request.data.sender = @request.auth.id && 
+@request.data.receiver != @request.auth.id
+
+// Update
+sender.id = @request.auth.id
+
+// Delete
+sender.id = @request.auth.id
+```
+
+**Index recommandés:**
+- `sender` (ascending)
+- `receiver` (ascending)
+- `product` (ascending)
+- `created` (descending)
+
+---
+
 ## 🔧 Configuration pas à pas
 
 ### Créer la collection `categories`
@@ -214,6 +253,44 @@ Ces champs s'ajoutent aux champs par défaut de PocketBase (username, email, pas
    - Pattern: `^[+]?[0-9\\s-]{8,20}$`
 
 3. Cliquez sur **"Save changes"**
+
+---
+
+### Créer la collection `messages`
+
+1. Cliquez sur **"New collection"**
+2. Name: `messages`
+3. Type: **Base collection**
+4. Ajoutez tous les champs listés ci-dessus
+
+   **Points importants:**
+   - `sender` : Relation to `users`, Single
+   - `receiver` : Relation to `users`, Single
+   - `product` : Relation to `products`, Single
+   - `content` : Text, Max 2000 characters
+   - `isRead` : Boolean, Default = false
+
+5. Onglet **"API Rules"** :
+   ```javascript
+   // List/View
+   sender.id = @request.auth.id || receiver.id = @request.auth.id
+   
+   // Create
+   @request.auth.id != "" && @request.data.sender = @request.auth.id && @request.data.receiver != @request.auth.id
+   
+   // Update
+   sender.id = @request.auth.id
+   
+   // Delete
+   sender.id = @request.auth.id
+   ```
+
+6. Onglet **"Indexes"** :
+   - Ajoutez un index sur `sender`
+   - Ajoutez un index sur `receiver`
+   - Ajoutez un index sur `product`
+
+7. Cliquez sur **"Create"**
 
 ---
 

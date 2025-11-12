@@ -315,9 +315,11 @@ export function ProductDetail({ productId }: Props) {
                 </div>
 
                 {!isOwner && authService.isAuthenticated() && (
-                  <Button>
-                    <Mail className="h-4 w-4 mr-2" />
-                    Contacter
+                  <Button asChild>
+                    <a href={`/messages?user=${product.seller}&product=${product.id}`}>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Contacter
+                    </a>
                   </Button>
                 )}
               </div>
@@ -325,10 +327,21 @@ export function ProductDetail({ productId }: Props) {
           </Card>
 
           {/* Bouton d'action principal */}
-          {!isOwner && product.status === 'Disponible' && (
-            <Button size="lg" className="w-full">
-              <Mail className="h-5 w-5 mr-2" />
-              Contacter le vendeur
+          {!isOwner && product.status === 'Disponible' && authService.isAuthenticated() && (
+            <Button size="lg" className="w-full" asChild>
+              <a href={`/messages?user=${product.seller}&product=${product.id}`}>
+                <Mail className="h-5 w-5 mr-2" />
+                Contacter le vendeur
+              </a>
+            </Button>
+          )}
+
+          {!isOwner && product.status === 'Disponible' && !authService.isAuthenticated() && (
+            <Button size="lg" className="w-full" asChild>
+              <a href="/login">
+                <Mail className="h-5 w-5 mr-2" />
+                Se connecter pour contacter
+              </a>
             </Button>
           )}
 

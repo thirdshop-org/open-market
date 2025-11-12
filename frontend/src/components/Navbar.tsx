@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { authService, type User } from '@/lib/pocketbase';
-import { LogOut, User as UserIcon, ShoppingBag, Menu, X } from 'lucide-react';
+import { messageService } from '@/lib/messages';
+import { LogOut, User as UserIcon, ShoppingBag, Menu, X, MessageSquare } from 'lucide-react';
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     // Vérifier l'utilisateur au chargement
@@ -14,8 +16,36 @@ export function Navbar() {
     // Observer les changements d'authentification
     authService.onChange((newUser) => {
       setUser(newUser);
+      if (newUser) {
+        loadUnreadCount();
+      } else {
+        setUnreadCount(0);
+      }
     });
+
+    // Charger le compteur de messages non lus
+    if (authService.isAuthenticated()) {
+      loadUnreadCount();
+
+      // S'abonner aux nouveaux messages
+      const unsubscribe = messageService.subscribe(() => {
+        loadUnreadCount();
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }
   }, []);
+
+  const loadUnreadCount = async () => {
+    try {
+      const count = await messageService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Error loading unread count:', error);
+    }
+  };
 
   const handleLogout = () => {
     authService.logout();
@@ -48,6 +78,17 @@ export function Navbar() {
                 </a>
                 <a href="/my-products" className="text-sm font-medium hover:text-primary transition-colors">
                   Mes annonces
+                </a>
+                <a href="/messages" className="text-sm font-medium hover:text-primary transition-colors relative">
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="h-4 w-4" />
+                    Messages
+                  </span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-2 px-1.5 py-0.5 bg-destructive text-destructive-foreground text-xs rounded-full font-medium min-w-[1.25rem] text-center">
+                      {unreadCount}
+                    </span>
+                  )}
                 </a>
                 <a href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
                   Tableau de bord
@@ -125,6 +166,20 @@ export function Navbar() {
                   className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                 >
                   Mes annonces
+                </a>
+                <a 
+                  href="/messages" 
+                  className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors relative"
+                >
+                  <span className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Messages
+                    {unreadCount > 0 && (
+                      <span className="px-1.5 py-0.5 bg-destructive text-destructive-foreground text-xs rounded-full font-medium">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </span>
                 </a>
                 <a 
                   href="/dashboard" 
