@@ -46,6 +46,9 @@ export function Navbar() {
                 <a href="/profile" className="text-sm font-medium hover:text-primary transition-colors">
                   Mon profil
                 </a>
+                <a href="/my-products" className="text-sm font-medium hover:text-primary transition-colors">
+                  Mes annonces
+                </a>
                 <a href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
                   Tableau de bord
                 </a>
@@ -116,6 +119,12 @@ export function Navbar() {
                   className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                 >
                   Mon profil
+                </a>
+                <a 
+                  href="/my-products" 
+                  className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+                >
+                  Mes annonces
                 </a>
                 <a 
                   href="/dashboard" 

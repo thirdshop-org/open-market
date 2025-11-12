@@ -13,7 +13,7 @@ Un MVP de marketplace doit permettre à un acheteur de trouver un produit et à 
     *   Profil utilisateur basique (nom d'utilisateur, avatar, localisation, contact simple).
     *   Réinitialisation de mot de passe.
 2.  **Gestion des Produits :**
-    *   Création, modification et suppression d'une annonce par un vendeur (titre, description, prix, catégorie, état, localisation, multiples images).
+    *   Création, modification et suppression d'une annonce par un vendeur (titre, description, prix, catégorie, état, localisation, multiples images, références produit et compatibilitées).
     *   Visualisation des annonces (page de détail produit).
     *   Recherche et filtrage basique des annonces (par mots-clés, catégorie, état).
 3.  **Communication :**

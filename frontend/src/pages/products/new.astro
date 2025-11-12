@@ -1,0 +1,38 @@
+---
+import '../../styles/global.css';
+import { Navbar } from '@/components/Navbar';
+import { ProductForm } from '@/components/ProductForm';
+---
+
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Créer une annonce - Open Market</title>
+		<meta name="description" content="Créez une nouvelle annonce sur Open Market" />
+	</head>
+
+	<body class="bg-background">
+		<Navbar client:load />
+		
+		<main class="container mx-auto px-4 py-8">
+			<div class="mb-8">
+				<h1 class="text-3xl font-bold tracking-tight">Créer une annonce</h1>
+				<p class="text-muted-foreground mt-2">
+					Remplissez le formulaire pour créer votre annonce de pièce détachée
+				</p>
+			</div>
+			
+			<ProductForm client:load />
+		</main>
+
+		<footer class="border-t py-8 mt-20">
+			<div class="container mx-auto px-4 text-center text-sm text-muted-foreground">
+				<p>&copy; 2025 Open Market. Tous droits réservés.</p>
+			</div>
+		</footer>
+	</body>
+</html>
+
