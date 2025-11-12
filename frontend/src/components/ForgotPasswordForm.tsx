@@ -41,6 +41,9 @@ export function ForgotPasswordForm() {
                 Si un compte existe avec cet email, vous recevrez un lien 
                 pour réinitialiser votre mot de passe.
               </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Le lien est valable pendant 30 minutes. Vérifiez aussi vos spams.
+              </p>
             </div>
             <Button variant="outline" asChild className="mt-4">
               <a href="/login">
