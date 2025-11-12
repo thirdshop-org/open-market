@@ -42,12 +42,12 @@ export function ProductCard({ product }: Props) {
             </div>
 
             {/* Titre */}
-            <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.5rem]">
+            <h3 className="font-semibold text-lg line-clamp-2 min-h-14">
               {product.title}
             </h3>
 
             {/* Description */}
-            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+            <p className="text-sm text-muted-foreground line-clamp-2 min-h-10">
               {product.description.replace(/<[^>]*>/g, '')}
             </p>
 

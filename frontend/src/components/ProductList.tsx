@@ -8,9 +8,10 @@ interface Props {
   categoryId?: string;
   sellerId?: string;
   searchQuery?: string;
+  myProducts?: boolean;
 }
 
-export function ProductList({ filter, categoryId, sellerId, searchQuery }: Props) {
+export function ProductList({ filter, categoryId, sellerId, searchQuery, myProducts }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,7 +20,7 @@ export function ProductList({ filter, categoryId, sellerId, searchQuery }: Props
 
   useEffect(() => {
     loadProducts();
-  }, [filter, categoryId, sellerId, searchQuery, page]);
+  }, [filter, categoryId, sellerId, searchQuery, myProducts, page]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -28,7 +29,9 @@ export function ProductList({ filter, categoryId, sellerId, searchQuery }: Props
     try {
       let result;
 
-      if (searchQuery) {
+      if (myProducts) {
+        result = await productService.getMyProducts(page);
+      } else if (searchQuery) {
         result = await productService.search(searchQuery, page);
       } else if (categoryId) {
         result = await productService.getByCategory(categoryId, page);
