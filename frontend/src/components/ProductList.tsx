@@ -3,15 +3,24 @@ import { productService, type Product } from '@/lib/products';
 import { ProductCard } from './ProductCard';
 import { Loader2 } from 'lucide-react';
 
+interface Filters {
+  category?: string;
+  condition?: string;
+  priceMin?: string;
+  priceMax?: string;
+  status?: string;
+}
+
 interface Props {
   filter?: string;
   categoryId?: string;
   sellerId?: string;
   searchQuery?: string;
   myProducts?: boolean;
+  filters?: Filters;
 }
 
-export function ProductList({ filter, categoryId, sellerId, searchQuery, myProducts }: Props) {
+export function ProductList({ filter, categoryId, sellerId, searchQuery, myProducts, filters }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,7 +29,35 @@ export function ProductList({ filter, categoryId, sellerId, searchQuery, myProdu
 
   useEffect(() => {
     loadProducts();
-  }, [filter, categoryId, sellerId, searchQuery, myProducts, page]);
+  }, [filter, categoryId, sellerId, searchQuery, myProducts, filters, page]);
+
+  const buildFilterString = () => {
+    const conditions: string[] = [];
+
+    // Filtres de base
+    if (!myProducts && !sellerId) {
+      conditions.push('status = "Disponible"');
+    }
+
+    // Filtres personnalisés
+    if (filters?.category) {
+      conditions.push(`category = "${filters.category}"`);
+    }
+    if (filters?.condition) {
+      conditions.push(`condition = "${filters.condition}"`);
+    }
+    if (filters?.priceMin) {
+      conditions.push(`price >= ${filters.priceMin}`);
+    }
+    if (filters?.priceMax) {
+      conditions.push(`price <= ${filters.priceMax}`);
+    }
+    if (filters?.status) {
+      conditions.push(`status = "${filters.status}"`);
+    }
+
+    return conditions.length > 0 ? conditions.join(' && ') : undefined;
+  };
 
   const loadProducts = async () => {
     setLoading(true);
@@ -28,9 +65,35 @@ export function ProductList({ filter, categoryId, sellerId, searchQuery, myProdu
 
     try {
       let result;
+      const filterString = buildFilterString();
 
       if (myProducts) {
         result = await productService.getMyProducts(page);
+        
+        // Appliquer les filtres côté client pour myProducts
+        if (filters) {
+          let filtered = result.items;
+          
+          if (filters.category) {
+            filtered = filtered.filter(p => p.category === filters.category);
+          }
+          if (filters.condition) {
+            filtered = filtered.filter(p => p.condition === filters.condition);
+          }
+          if (filters.priceMin) {
+            filtered = filtered.filter(p => p.price >= parseFloat(filters.priceMin!));
+          }
+          if (filters.priceMax) {
+            filtered = filtered.filter(p => p.price <= parseFloat(filters.priceMax!));
+          }
+          if (filters.status) {
+            filtered = filtered.filter(p => p.status === filters.status);
+          }
+          
+          result.items = filtered;
+          result.totalItems = filtered.length;
+          result.totalPages = Math.ceil(filtered.length / 20);
+        }
       } else if (searchQuery) {
         result = await productService.search(searchQuery, page);
       } else if (categoryId) {
@@ -38,7 +101,7 @@ export function ProductList({ filter, categoryId, sellerId, searchQuery, myProdu
       } else if (sellerId) {
         result = await productService.getBySeller(sellerId, page);
       } else {
-        result = await productService.getAll(page, 20, filter);
+        result = await productService.getAll(page, 20, filterString);
       }
 
       setProducts(result.items);
