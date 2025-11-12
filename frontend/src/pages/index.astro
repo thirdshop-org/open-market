@@ -1,25 +1,117 @@
 ---
 import '../styles/global.css';
-// Component Imports
+import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-
-// Full Astro Component Syntax:
-// https://docs.astro.build/basics/astro-components/
+import { ShoppingBag, TrendingUp, Shield, Zap } from 'lucide-react';
 ---
 
-<html lang="en">
+<html lang="fr">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro + TailwindCSS</title>
+		<title>Open Market - Marketplace en ligne</title>
+		<meta name="description" content="Achetez et vendez sur Open Market, votre marketplace en ligne de confiance" />
 	</head>
 
 	<body>
-		<div class="grid place-items-center h-screen content-center">
-			<Button>Tailwind Button in Astro!</Button>
-			<a href="/markdown-page" class="p-4 underline">Markdown is also supported...</a>
-		</div>
+		<Navbar client:load />
+		
+		<main>
+			<!-- Hero Section -->
+			<section class="container mx-auto px-4 py-20">
+				<div class="max-w-4xl mx-auto text-center space-y-8">
+					<div class="inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-4">
+						<ShoppingBag className="h-12 w-12 text-primary" />
+					</div>
+					
+					<h1 class="text-5xl md:text-6xl font-bold tracking-tight">
+						Bienvenue sur <span class="text-primary">Open Market</span>
+					</h1>
+					
+					<p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+						Achetez et vendez en toute confiance sur notre plateforme sécurisée. 
+						Rejoignez des milliers d'utilisateurs qui font déjà confiance à Open Market.
+					</p>
+					
+					<div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+						<Button size="lg" asChild>
+							<a href="/signup">Commencer maintenant</a>
+						</Button>
+						<Button size="lg" variant="outline" asChild>
+							<a href="/products">Découvrir les produits</a>
+						</Button>
+					</div>
+				</div>
+			</section>
+
+			<!-- Features Section -->
+			<section class="bg-muted/50 py-20">
+				<div class="container mx-auto px-4">
+					<h2 class="text-3xl font-bold text-center mb-12">
+						Pourquoi choisir Open Market ?
+					</h2>
+					
+					<div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+						<div class="bg-card p-6 rounded-lg border shadow-sm space-y-4">
+							<div class="inline-flex p-3 bg-primary/10 rounded-lg">
+								<Shield className="h-6 w-6 text-primary" />
+							</div>
+							<h3 class="text-xl font-semibold">Sécurisé</h3>
+							<p class="text-muted-foreground">
+								Vos transactions sont protégées par notre système de paiement sécurisé 
+								et notre politique de protection des acheteurs.
+							</p>
+						</div>
+						
+						<div class="bg-card p-6 rounded-lg border shadow-sm space-y-4">
+							<div class="inline-flex p-3 bg-primary/10 rounded-lg">
+								<Zap className="h-6 w-6 text-primary" />
+							</div>
+							<h3 class="text-xl font-semibold">Rapide</h3>
+							<p class="text-muted-foreground">
+								Publiez vos annonces en quelques clics et commencez à vendre 
+								immédiatement. Pas de frais cachés, pas de complications.
+							</p>
+						</div>
+						
+						<div class="bg-card p-6 rounded-lg border shadow-sm space-y-4">
+							<div class="inline-flex p-3 bg-primary/10 rounded-lg">
+								<TrendingUp className="h-6 w-6 text-primary" />
+							</div>
+							<h3 class="text-xl font-semibold">Croissant</h3>
+							<p class="text-muted-foreground">
+								Rejoignez une communauté en pleine expansion de vendeurs et 
+								d'acheteurs passionnés du monde entier.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- CTA Section -->
+			<section class="container mx-auto px-4 py-20">
+				<div class="max-w-3xl mx-auto text-center space-y-6 bg-primary/5 p-12 rounded-2xl border">
+					<h2 class="text-3xl md:text-4xl font-bold">
+						Prêt à commencer ?
+					</h2>
+					<p class="text-lg text-muted-foreground">
+						Créez votre compte gratuitement et commencez à acheter ou vendre dès aujourd'hui.
+					</p>
+					<div class="pt-4">
+						<Button size="lg" asChild>
+							<a href="/signup">Créer un compte gratuit</a>
+						</Button>
+					</div>
+				</div>
+			</section>
+		</main>
+
+		<footer class="border-t py-8 mt-20">
+			<div class="container mx-auto px-4 text-center text-sm text-muted-foreground">
+				<p>&copy; 2025 Open Market. Tous droits réservés.</p>
+			</div>
+		</footer>
 	</body>
 </html>
