@@ -208,19 +208,31 @@ export const messageService = {
     const user = pb.authStore.model;
     if (!user) return () => {};
 
-    // S'abonner à la vue userMessages
-    pb.collection('userMessages').subscribe<Message>('*', (e) => {
+    // IMPORTANT: Les subscriptions ne fonctionnent que sur les collections de base, pas les vues
+    // On s'abonne à la collection 'messages' originale
+    pb.collection('messages').subscribe<any>('*', async (e) => {
       if (e.action === 'create') {
-        // Notifier seulement si le message est pour l'utilisateur actuel
-        if (e.record.receiverUserId === user.id || e.record.senderId === user.id) {
-          callback(e.record);
+        // Vérifier si le message concerne l'utilisateur actuel
+        if (e.record.receiver === user.id || e.record.sender === user.id) {
+          try {
+            // Récupérer le message complet depuis la vue pour avoir toutes les données jointes
+            const enrichedMessages = await pb.collection('userMessages').getList<Message>(1, 1, {
+              filter: `id = "${e.record.id}"`,
+            });
+
+            if (enrichedMessages.items.length > 0) {
+              callback(enrichedMessages.items[0]);
+            }
+          } catch (error) {
+            console.error('Error fetching enriched message:', error);
+          }
         }
       }
     });
 
     // Retourner une fonction de désabonnement
     return () => {
-      pb.collection('userMessages').unsubscribe('*');
+      pb.collection('messages').unsubscribe('*');
     };
   },
 
