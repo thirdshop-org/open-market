@@ -58,6 +58,14 @@ export function ConversationList({ onSelectConversation, selectedConversation }:
     }
   };
 
+  const parseImages = (images: string) => {
+    try {
+      return JSON.parse(images);
+    } catch {
+      return [];
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -85,9 +93,8 @@ export function ConversationList({ onSelectConversation, selectedConversation }:
           selectedConversation?.userId === conv.otherUser.id &&
           selectedConversation?.productId === conv.product.id;
 
-        const firstImage = conv.product.images && conv.product.images.length > 0
-          ? conv.product.images[0]
-          : null;
+        const images = parseImages(conv.product.images);
+        const firstImage = images && images.length > 0 ? images[0] : null;
 
         return (
           <button
@@ -102,7 +109,7 @@ export function ConversationList({ onSelectConversation, selectedConversation }:
             <Card className="p-4 border-0 shadow-none">
               <div className="flex items-start gap-3">
                 {/* Avatar utilisateur */}
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
                   {conv.otherUser.avatar ? (
                     <img
                       src={conv.otherUser.avatar}
@@ -137,10 +144,10 @@ export function ConversationList({ onSelectConversation, selectedConversation }:
                   {/* Dernier message */}
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground truncate flex-1">
-                      {conv.lastMessage.content}
+                      {conv.lastMessage.messageContent}
                     </p>
-                    <p className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                      {formatDate(conv.lastMessage.created)}
+                    <p className="text-xs text-muted-foreground ml-2 shrink-0">
+                      {formatDate(conv.lastMessage.messageCreated)}
                     </p>
                   </div>
                 </div>

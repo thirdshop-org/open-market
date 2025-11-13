@@ -1,32 +1,31 @@
 import { pb } from './pocketbase';
 
-// Types pour les messages
+// Types pour les messages (depuis la vue userMessages)
 export interface Message {
   id: string;
+  messageId: string;
+  messageContent: string;
+  messageIsRead: boolean;
+  messageCreated: string;
+  messageUpdated: string;
+  productId: string;
+  productTitle: string;
+  productImages: string;
+  senderId: string;
+  senderUsername: string;
+  senderAvatar?: string;
+  receiverUserId: string;
+  receiverUserUsername: string;
+  receiverUserAvatar?: string;
+}
+
+// Type pour les messages de la collection originale (pour l'envoi)
+export interface MessageCreate {
   sender: string;
   receiver: string;
   product: string;
   content: string;
   isRead: boolean;
-  created: string;
-  updated: string;
-  expand?: {
-    sender?: {
-      id: string;
-      username: string;
-      avatar?: string;
-    };
-    receiver?: {
-      id: string;
-      username: string;
-      avatar?: string;
-    };
-    product?: {
-      id: string;
-      title: string;
-      images?: string[];
-    };
-  };
 }
 
 export interface Conversation {
@@ -38,7 +37,7 @@ export interface Conversation {
   product: {
     id: string;
     title: string;
-    images?: string[];
+    images: string;
   };
   lastMessage: Message;
   unreadCount: number;
@@ -54,13 +53,22 @@ export const messageService = {
       const user = pb.authStore.model;
       if (!user) throw new Error('Non authentifié');
 
-      return await pb.collection('messages').create<Message>({
+      // On envoie toujours à la collection messages originale
+      await pb.collection('messages').create<MessageCreate>({
         sender: user.id,
         receiver: receiverId,
         product: productId,
         content: content.trim(),
         isRead: false,
       });
+
+      // Retourner le dernier message de la vue pour avoir toutes les infos
+      const messages = await pb.collection('userMessages').getList<Message>(1, 1, {
+        filter: `senderId = "${user.id}" && receiverUserId = "${receiverId}" && productId = "${productId}"`,
+        sort: '-messageCreated',
+      });
+
+      return messages.items[0];
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;
@@ -75,12 +83,11 @@ export const messageService = {
       const user = pb.authStore.model;
       if (!user) throw new Error('Non authentifié');
 
-      const filter = `((sender = "${user.id}" && receiver = "${otherUserId}") || (sender = "${otherUserId}" && receiver = "${user.id}")) && product = "${productId}"`;
+      const filter = `((senderId = "${user.id}" && receiverUserId = "${otherUserId}") || (senderId = "${otherUserId}" && receiverUserId = "${user.id}")) && productId = "${productId}"`;
 
-      return await pb.collection('messages').getList<Message>(page, perPage, {
+      return await pb.collection('userMessages').getList<Message>(page, perPage, {
         filter,
-        sort: 'created',
-        expand: 'sender,receiver,product',
+        sort: 'messageCreated',
       });
     } catch (error) {
       console.error('Error fetching conversation:', error);
@@ -97,44 +104,45 @@ export const messageService = {
       if (!user) throw new Error('Non authentifié');
 
       // Récupérer tous les messages où l'utilisateur est impliqué
-      const messages = await pb.collection('messages').getFullList<Message>({
-        filter: `sender.id = "${user.id}" || receiver.id = "${user.id}"`,
-        sort: '-created',
-        expand: 'sender,receiver,product',
+      const messages = await pb.collection('userMessages').getFullList<Message>({
+        filter: `senderId = "${user.id}" || receiverUserId = "${user.id}"`,
+        sort: '-messageCreated',
       });
 
       // Grouper par conversation (combinaison utilisateur + produit)
       const conversationsMap = new Map<string, Conversation>();
 
       messages.forEach((message) => {
-        const otherUserId = message.sender === user.id ? message.receiver : message.sender;
-        const key = `${otherUserId}-${message.product}`;
+        const otherUserId = message.senderId === user.id ? message.receiverUserId : message.senderId;
+        const key = `${otherUserId}-${message.productId}`;
 
         if (!conversationsMap.has(key)) {
-          const otherUser = message.sender === user.id 
-            ? message.expand?.receiver 
-            : message.expand?.sender;
+          const otherUser = message.senderId === user.id 
+            ? {
+                id: message.receiverUserId,
+                username: message.receiverUserUsername,
+                avatar: message.receiverUserAvatar,
+              }
+            : {
+                id: message.senderId,
+                username: message.senderUsername,
+                avatar: message.senderAvatar,
+              };
 
-          if (otherUser && message.expand?.product) {
-            conversationsMap.set(key, {
-              otherUser: {
-                id: otherUser.id,
-                username: otherUser.username,
-                avatar: otherUser.avatar,
-              },
-              product: {
-                id: message.expand.product.id,
-                title: message.expand.product.title,
-                images: message.expand.product.images,
-              },
-              lastMessage: message,
-              unreadCount: 0,
-            });
-          }
+          conversationsMap.set(key, {
+            otherUser,
+            product: {
+              id: message.productId,
+              title: message.productTitle,
+              images: message.productImages,
+            },
+            lastMessage: message,
+            unreadCount: 0,
+          });
         }
 
         // Compter les messages non lus
-        if (!message.isRead && message.receiver === user.id) {
+        if (!message.messageIsRead && message.receiverUserId === user.id) {
           const conv = conversationsMap.get(key);
           if (conv) {
             conv.unreadCount++;
@@ -182,8 +190,8 @@ export const messageService = {
       const user = pb.authStore.model;
       if (!user) throw new Error('Non authentifié');
 
-      const messages = await pb.collection('messages').getFullList<Message>({
-        filter: `receiver = "${user.id}" && isRead = false`,
+      const messages = await pb.collection('userMessages').getFullList<Message>({
+        filter: `receiverUserId = "${user.id}" && messageIsRead = false`,
       });
 
       return messages.length;
@@ -200,10 +208,11 @@ export const messageService = {
     const user = pb.authStore.model;
     if (!user) return () => {};
 
-    pb.collection('messages').subscribe<Message>('*', (e) => {
+    // S'abonner à la vue userMessages
+    pb.collection('userMessages').subscribe<Message>('*', (e) => {
       if (e.action === 'create') {
         // Notifier seulement si le message est pour l'utilisateur actuel
-        if (e.record.receiver === user.id || e.record.sender === user.id) {
+        if (e.record.receiverUserId === user.id || e.record.senderId === user.id) {
           callback(e.record);
         }
       }
@@ -211,7 +220,7 @@ export const messageService = {
 
     // Retourner une fonction de désabonnement
     return () => {
-      pb.collection('messages').unsubscribe('*');
+      pb.collection('userMessages').unsubscribe('*');
     };
   },
 
@@ -223,9 +232,9 @@ export const messageService = {
       const user = pb.authStore.model;
       if (!user) return false;
 
-      const filter = `((sender = "${user.id}" && receiver = "${otherUserId}") || (sender = "${otherUserId}" && receiver = "${user.id}")) && product = "${productId}"`;
+      const filter = `((senderId = "${user.id}" && receiverUserId = "${otherUserId}") || (senderId = "${otherUserId}" && receiverUserId = "${user.id}")) && productId = "${productId}"`;
 
-      const messages = await pb.collection('messages').getList<Message>(1, 1, {
+      const messages = await pb.collection('userMessages').getList<Message>(1, 1, {
         filter,
       });
 

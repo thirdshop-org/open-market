@@ -90,7 +90,9 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
     setSending(true);
     try {
       const message = await messageService.send(otherUserId, productId, newMessage);
-      setMessages((prev) => [...prev, message]);
+      if (message) {
+        setMessages((prev) => [...prev, message]);
+      }
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -124,7 +126,7 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
     const groups: { [key: string]: Message[] } = {};
     
     messages.forEach((message) => {
-      const dateKey = formatDate(message.created);
+      const dateKey = formatDate(message.messageCreated);
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -132,6 +134,14 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
     });
 
     return groups;
+  };
+
+  const parseImages = (images: string) => {
+    try {
+      return JSON.parse(images);
+    } catch {
+      return [];
+    }
   };
 
   if (loading) {
@@ -151,13 +161,16 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
         <div className="flex items-center gap-3">
           {product && (
             <>
-              {product.images && product.images.length > 0 && (
-                <img
-                  src={productService.getImageUrl(product, product.images[0], '100x100')}
-                  alt={product.title}
-                  className="w-12 h-12 rounded-md object-cover"
-                />
-              )}
+              {(() => {
+                const images = parseImages(product.images);
+                return images && images.length > 0 && (
+                  <img
+                    src={productService.getImageUrl(product, images[0], '100x100')}
+                    alt={product.title}
+                    className="w-12 h-12 rounded-md object-cover"
+                  />
+                );
+              })()}
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate">{otherUserName || 'Utilisateur'}</p>
                 <a
@@ -186,7 +199,7 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
 
             {/* Messages du jour */}
             {msgs.map((message) => {
-              const isOwn = message.sender === currentUser?.id;
+              const isOwn = message.senderId === currentUser?.id;
 
               return (
                 <div
@@ -201,7 +214,7 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
                     }`}
                   >
                     <p className="text-sm break-words whitespace-pre-wrap">
-                      {message.content}
+                      {message.messageContent}
                     </p>
                     <p
                       className={`text-xs mt-1 ${
@@ -210,8 +223,8 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
                           : 'text-muted-foreground'
                       }`}
                     >
-                      {formatTime(message.created)}
-                      {isOwn && message.isRead && ' • Lu'}
+                      {formatTime(message.messageCreated)}
+                      {isOwn && message.messageIsRead && ' • Lu'}
                     </p>
                   </div>
                 </div>
