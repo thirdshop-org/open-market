@@ -1,8 +1,7 @@
 ---
 import '../styles/global.css';
 import { Navbar } from '@/components/Navbar';
-import { ConversationList } from '@/components/ConversationList';
-import { ChatWindow } from '@/components/ChatWindow';
+import { MessagingInterface } from '@/components/MessagingInterface';
 
 // Activer le SSR
 export const prerender = false;
@@ -33,37 +32,11 @@ const productId = Astro.url.searchParams.get('product');
 				</p>
 			</div>
 
-			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
-				{/* Liste des conversations */}
-				<div class="lg:col-span-1 overflow-y-auto border rounded-lg">
-					<ConversationList 
-						client:load
-						selectedConversation={userId && productId ? { userId, productId } : undefined}
-						onSelectConversation={(uid, pid) => {
-							window.location.href = `/messages?user=${uid}&product=${pid}`;
-						}}
-					/>
-				</div>
-
-				{/* Fenêtre de chat */}
-				<div class="lg:col-span-2 border rounded-lg overflow-hidden">
-					{userId && productId ? (
-						<ChatWindow 
-							client:load
-							otherUserId={userId}
-							productId={productId}
-						/>
-					) : (
-						<div class="flex items-center justify-center h-full text-muted-foreground">
-							<div class="text-center">
-								<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 opacity-20"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-								<p>Sélectionnez une conversation</p>
-								<p class="text-sm mt-2">Choisissez une conversation dans la liste</p>
-							</div>
-						</div>
-					)}
-				</div>
-			</div>
+			<MessagingInterface 
+				client:load
+				initialUserId={userId || undefined}
+				initialProductId={productId || undefined}
+			/>
 		</main>
 
 		<footer class="border-t py-8 mt-20">

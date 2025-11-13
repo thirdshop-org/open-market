@@ -19,8 +19,12 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [product, setProduct] = useState<any>(null);
+  const [detectedUserName, setDetectedUserName] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = authService.getCurrentUser();
+
+  // Utiliser le nom fourni ou le nom détecté depuis les messages
+  const displayUserName = otherUserName || detectedUserName || 'Utilisateur';
 
   useEffect(() => {
     loadMessages();
@@ -30,10 +34,10 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
     // S'abonner aux nouveaux messages
     const unsubscribe = messageService.subscribe((message) => {
       if (
-        (message.sender === otherUserId && message.receiver === currentUser?.id) ||
-        (message.sender === currentUser?.id && message.receiver === otherUserId)
+        (message.senderId === otherUserId && message.receiverUserId === currentUser?.id) ||
+        (message.senderId === currentUser?.id && message.receiverUserId === otherUserId)
       ) {
-        if (message.product === productId) {
+        if (message.productId === productId) {
           setMessages((prev) => [...prev, message]);
           markAsRead();
         }
@@ -54,6 +58,17 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
     try {
       const result = await messageService.getConversation(otherUserId, productId);
       setMessages(result.items);
+      
+      // Détecter le nom de l'autre utilisateur depuis le premier message
+      if (result.items.length > 0 && !otherUserName) {
+        const firstMessage = result.items[0];
+        const name = firstMessage.senderId === otherUserId 
+          ? firstMessage.senderUsername
+          : firstMessage.receiverUserUsername;
+        setDetectedUserName(name);
+      }
+      
+      scrollToBottom();
     } catch (error) {
       console.error('Error loading messages:', error);
     } finally {
@@ -172,7 +187,7 @@ export function ChatWindow({ otherUserId, productId, otherUserName }: Props) {
                 );
               })()}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{otherUserName || 'Utilisateur'}</p>
+                <p className="font-semibold truncate">{displayUserName}</p>
                 <a
                   href={`/products/${productId}`}
                   className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 truncate"
