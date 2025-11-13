@@ -21,6 +21,10 @@ export function ConversationList({ onSelectConversation, selectedConversation }:
       loadConversations();
     });
 
+    setTimeout(() => {
+      loadConversations();
+    }, 4000);
+
     return () => {
       unsubscribe();
     };

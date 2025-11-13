@@ -98,7 +98,7 @@ export const messageService = {
 
       // Récupérer tous les messages où l'utilisateur est impliqué
       const messages = await pb.collection('messages').getFullList<Message>({
-        filter: `sender = "${user.id}" || receiver = "${user.id}"`,
+        filter: `sender.id = "${user.id}" || receiver.id = "${user.id}"`,
         sort: '-created',
         expand: 'sender,receiver,product',
       });
