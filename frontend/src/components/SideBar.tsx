@@ -28,6 +28,16 @@ const data = {
         },
       ],
     },
+    {
+      title: "Mes commandes",
+      url: "#",
+      items: [
+        {
+          title: "En attente de validation",
+          url: "/dashboard/orders-pending",
+        },
+      ],
+    }
   ],
 }
 

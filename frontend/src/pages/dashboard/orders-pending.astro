@@ -1,0 +1,13 @@
+---
+import Main from '@/layouts/main.astro';
+import { OrdersPendingPage } from '@/components/OrdersPendingPage';
+
+const template = {
+  title: "Commandes en attente - Dashboard - Open Market",
+};
+---
+
+<Main content={template}>
+  <OrdersPendingPage client:load />
+</Main>
+
