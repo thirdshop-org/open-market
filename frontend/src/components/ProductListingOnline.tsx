@@ -197,13 +197,13 @@ export function ProductListingOnline() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                              <a href={`/products/${product.id}`}>
+                              <a href={`/products/${product.id}`} target="_blank">
                                 <Eye className="mr-2 h-4 w-4" />
                                 Voir
                               </a>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
-                              <a href={`/products/${product.id}/edit`}>
+                              <a href={`/products/${product.id}/edit`} target="_blank">
                                 <Edit className="mr-2 h-4 w-4" />
                                 Modifier
                               </a>
