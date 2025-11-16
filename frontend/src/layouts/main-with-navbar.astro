@@ -1,0 +1,11 @@
+---
+import Main from './main.astro';
+const { title } = Astro.props;
+import { Navbar } from '@/components/Navbar';
+
+---
+
+<Main content={{ title }}>
+	<Navbar client:load />
+	<slot />
+</Main>

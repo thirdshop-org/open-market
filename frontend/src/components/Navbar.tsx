@@ -75,7 +75,7 @@ export function Navbar() {
                 <a href="/my-products" className="text-sm font-medium hover:text-primary transition-colors">
                   Mes annonces
                 </a>
-                <a href="/orders" className="text-sm font-medium hover:text-primary transition-colors">
+                <a href="/dashboard/orders-waiting-seller" className="text-sm font-medium hover:text-primary transition-colors">
                   Mes commandes
                 </a>
                 <a href="/messages" className="text-sm font-medium hover:text-primary transition-colors relative">
@@ -168,7 +168,7 @@ export function Navbar() {
                   Mes annonces
                 </a>
                 <a 
-                  href="/orders" 
+                  href="/dashboard/orders-waiting-seller" 
                   className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                 >
                   Mes commandes
