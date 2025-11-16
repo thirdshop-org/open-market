@@ -298,7 +298,7 @@ export const sellerOrderService = {
 
       const productIds = myProducts.map((p) => p.id);
 
-      if (productIds.length === 0) {
+      // if (productIds.length === 0) {
         return {
           pendingOrders: 0,
           readyToSend: 0,
@@ -306,7 +306,7 @@ export const sellerOrderService = {
           delivered: 0,
           totalRevenue: 0,
         };
-      }
+      // }
 
       const productFilter = productIds.map((id) => `productId = "${id}"`).join(' || ');
 

@@ -11,7 +11,6 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from "@/components/ui/breadcrumb"
-import { PendingOrders } from "./PendingOrders"
 import { sellerOrderService, type SellerStats } from "@/lib/seller-orders"
 import { Loader2, Package, TrendingUp, Truck, CheckCircle } from "lucide-react"
 
@@ -29,6 +28,7 @@ export function DashboardContent() {
       setStats(data)
     } catch (error) {
       console.error('Error loading stats:', error)
+      setLoadingStats(false)
     } finally {
       setLoadingStats(false)
     }
@@ -114,8 +114,6 @@ export function DashboardContent() {
               <p className="text-xs text-muted-foreground mt-1">Total des ventes</p>
             </div>
           </div>
-          {/* Section principale : Commandes en attente d'envoi */}
-          <PendingOrders />
         </div>
       </SidebarInset>
     </SidebarProvider>

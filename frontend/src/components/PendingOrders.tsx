@@ -24,13 +24,14 @@ export function PendingOrders() {
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    console.log('useEffect');
     loadOrders();
   }, []);
 
   const loadOrders = async () => {
     setLoading(true);
     setError('');
-
+    console.log('loadOrders');
     try {
       const data = await sellerOrderService.getPendingOrders();
       setOrders(data);
