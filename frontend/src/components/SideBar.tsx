@@ -36,6 +36,10 @@ const data = {
           title: "En attente de validation",
           url: "/dashboard/orders-pending",
         },
+        {
+          title: "En attente du vendeur",
+          url: "/dashboard/orders-waiting-seller",
+        },
       ],
     },
     {
