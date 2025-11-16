@@ -26,22 +26,6 @@ const data = {
           title: "Actuellement en ligne",
           url: "/dashboard/products-online",
         },
-        {
-          title: "En attente de validation",
-          url: "#",
-        },
-        {
-          title: "En attente de paiement",
-          url: "#",
-        },
-        {
-          title: "En attente de livraison",
-          url: "#",
-        },
-        {
-          title: "En attente de réception",
-          url: "#",
-        },
       ],
     },
   ],
