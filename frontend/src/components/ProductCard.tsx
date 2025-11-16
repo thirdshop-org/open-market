@@ -1,18 +1,52 @@
+import { useState } from 'react';
 import { type Product, productService } from '@/lib/products';
+import { cartService } from '@/lib/cart';
+import { authService } from '@/lib/pocketbase';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { MapPin, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MapPin, Eye, ShoppingCart, Loader2, Check } from 'lucide-react';
 
 interface Props {
   product: Product;
 }
 
 export function ProductCard({ product }: Props) {
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+  
   const firstImage = product.images && product.images.length > 0 
     ? productService.getImageUrl(product, product.images[0], '300x200')
     : null;
 
   const categoryName = product.expand?.category?.name || 'Sans catégorie';
   const sellerName = product.expand?.seller?.username || 'Vendeur';
+  const isAuthenticated = authService.isAuthenticated();
+  const currentUser = authService.getCurrentUser();
+  const isOwner = currentUser && product.seller === currentUser.id;
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      window.location.href = '/login?redirect=/products';
+      return;
+    }
+
+    setAddingToCart(true);
+    try {
+      await cartService.addItem(product.id, 1);
+      setAddedToCart(true);
+      
+      setTimeout(() => {
+        setAddedToCart(false);
+      }, 2000);
+    } catch (err: any) {
+      alert('Erreur lors de l\'ajout au panier : ' + err.message);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
 
   return (
     <a href={`/products/${product.id}`}>
@@ -60,24 +94,53 @@ export function ProductCard({ product }: Props) {
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 pt-0 flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-primary">
-              {product.price.toFixed(2)} {product.currency}
-            </p>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-              {product.location && (
+        <CardFooter className="p-4 pt-0 flex flex-col gap-3">
+          <div className="flex items-center justify-between w-full">
+            <div>
+              <p className="text-2xl font-bold text-primary">
+                {product.price.toFixed(2)} {product.currency}
+              </p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                {product.location && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {product.location}
+                  </span>
+                )}
                 <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {product.location}
+                  <Eye className="h-3 w-3" />
+                  {product.views}
                 </span>
-              )}
-              <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {product.views}
-              </span>
+              </div>
             </div>
           </div>
+          
+          {/* Bouton Ajouter au panier - seulement si disponible et pas le propriétaire */}
+          {product.status === 'Disponible' && !isOwner && (
+            <Button 
+              className="w-full"
+              size="sm"
+              onClick={handleAddToCart}
+              disabled={addingToCart || addedToCart}
+            >
+              {addingToCart ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Ajout...
+                </>
+              ) : addedToCart ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Ajouté
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Ajouter au panier
+                </>
+              )}
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </a>

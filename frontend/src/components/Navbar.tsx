@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { authService, type User } from '@/lib/pocketbase';
 import { messageService } from '@/lib/messages';
+import { CartButton } from '@/components/CartButton';
 import { LogOut, User as UserIcon, ShoppingBag, Menu, X, MessageSquare } from 'lucide-react';
 
 export function Navbar() {
@@ -93,6 +94,7 @@ export function Navbar() {
                 <a href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
                   Tableau de bord
                 </a>
+                <CartButton />
                 <div className="flex items-center space-x-2 ml-4 pl-4 border-l">
                   <div className="flex items-center space-x-2">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -180,6 +182,12 @@ export function Navbar() {
                       </span>
                     )}
                   </span>
+                </a>
+                <a 
+                  href="/cart" 
+                  className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+                >
+                  Mon panier
                 </a>
                 <a 
                   href="/dashboard" 

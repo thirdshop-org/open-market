@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { productService, type Product } from '@/lib/products';
+import { cartService } from '@/lib/cart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { authService } from '@/lib/pocketbase';
@@ -15,7 +16,9 @@ import {
   Trash2,
   AlertCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ShoppingCart,
+  Check
 } from 'lucide-react';
 
 interface Props {
@@ -29,6 +32,8 @@ export function ProductDetail({ productId }: Props) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isOwner, setIsOwner] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     loadProduct();
@@ -82,6 +87,23 @@ export function ProductDetail({ productId }: Props) {
       setCurrentImageIndex((prev) => 
         prev === 0 ? product.images.length - 1 : prev - 1
       );
+    }
+  };
+
+  const handleAddToCart = async () => {
+    setAddingToCart(true);
+    try {
+      await cartService.addItem(productId, 1);
+      setAddedToCart(true);
+      
+      // Réinitialiser l'état après 2 secondes
+      setTimeout(() => {
+        setAddedToCart(false);
+      }, 2000);
+    } catch (err: any) {
+      alert('Erreur lors de l\'ajout au panier : ' + err.message);
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -326,23 +348,56 @@ export function ProductDetail({ productId }: Props) {
             </CardContent>
           </Card>
 
-          {/* Bouton d'action principal */}
+          {/* Boutons d'action principaux */}
           {!isOwner && product.status === 'Disponible' && authService.isAuthenticated() && (
-            <Button size="lg" className="w-full" asChild>
-              <a href={`/messages?user=${product.seller}&product=${product.id}`}>
-                <Mail className="h-5 w-5 mr-2" />
-                Contacter le vendeur
-              </a>
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                size="lg" 
+                className="w-full"
+                onClick={handleAddToCart}
+                disabled={addingToCart || addedToCart}
+              >
+                {addingToCart ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Ajout en cours...
+                  </>
+                ) : addedToCart ? (
+                  <>
+                    <Check className="h-5 w-5 mr-2" />
+                    Ajouté au panier
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-5 w-5 mr-2" />
+                    Ajouter au panier
+                  </>
+                )}
+              </Button>
+              <Button size="lg" variant="outline" className="w-full" asChild>
+                <a href={`/messages?user=${product.seller}&product=${product.id}`}>
+                  <Mail className="h-5 w-5 mr-2" />
+                  Contacter le vendeur
+                </a>
+              </Button>
+            </div>
           )}
 
           {!isOwner && product.status === 'Disponible' && !authService.isAuthenticated() && (
-            <Button size="lg" className="w-full" asChild>
-              <a href="/login">
-                <Mail className="h-5 w-5 mr-2" />
-                Se connecter pour contacter
-              </a>
-            </Button>
+            <div className="space-y-3">
+              <Button size="lg" className="w-full" asChild>
+                <a href="/login">
+                  <ShoppingCart className="h-5 w-5 mr-2" />
+                  Se connecter pour acheter
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" className="w-full" asChild>
+                <a href="/login">
+                  <Mail className="h-5 w-5 mr-2" />
+                  Contacter le vendeur
+                </a>
+              </Button>
+            </div>
           )}
 
           {product.status !== 'Disponible' && !isOwner && (
