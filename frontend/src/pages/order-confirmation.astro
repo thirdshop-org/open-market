@@ -1,0 +1,21 @@
+---
+import { OrderConfirmation } from '@/components/OrderConfirmation';
+import Main from '@/layouts/main.astro';
+
+const { orderId } = Astro.url.searchParams;
+
+if (!orderId) {
+  return Astro.redirect('/orders');
+}
+
+const template = {
+  title: "Confirmation de commande - Open Market",
+};
+---
+
+<Main content={template}>
+  <div class="container mx-auto px-4 py-8">
+    <OrderConfirmation orderId={orderId} client:load />
+  </div>
+</Main>
+

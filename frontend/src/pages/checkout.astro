@@ -1,0 +1,15 @@
+---
+import { Checkout } from '@/components/Checkout';
+import Main from '@/layouts/main.astro';
+
+const template = {
+  title: "Checkout - Open Market",
+};
+---
+
+<Main content={template}>
+  <div class="container mx-auto px-4 py-8">
+    <Checkout client:load />
+  </div>
+</Main>
+

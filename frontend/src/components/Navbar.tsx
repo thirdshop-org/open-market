@@ -80,6 +80,9 @@ export function Navbar() {
                 <a href="/my-products" className="text-sm font-medium hover:text-primary transition-colors">
                   Mes annonces
                 </a>
+                <a href="/orders" className="text-sm font-medium hover:text-primary transition-colors">
+                  Mes commandes
+                </a>
                 <a href="/messages" className="text-sm font-medium hover:text-primary transition-colors relative">
                   <span className="flex items-center gap-1">
                     <MessageSquare className="h-4 w-4" />
@@ -168,6 +171,12 @@ export function Navbar() {
                   className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                 >
                   Mes annonces
+                </a>
+                <a 
+                  href="/orders" 
+                  className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+                >
+                  Mes commandes
                 </a>
                 <a 
                   href="/messages" 

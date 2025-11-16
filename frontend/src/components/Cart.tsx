@@ -328,8 +328,8 @@ export function Cart() {
                 <span className="text-primary text-2xl">{formatPrice(totalAmount)}</span>
               </div>
 
-              <Button size="lg" className="w-full">
-                Procéder au paiement
+              <Button size="lg" className="w-full" asChild>
+                <a href="/checkout">Procéder au paiement</a>
               </Button>
 
               <p className="text-xs text-muted-foreground text-center">
