@@ -37,6 +37,16 @@ const data = {
           url: "/dashboard/orders-pending",
         },
       ],
+    },
+    {
+      title: "Mon profil",
+      url: "/dashboard/profile",
+      items: [
+        {
+          title: "Mon profil",
+          url: "/dashboard/profile",
+        },
+      ],
     }
   ],
 }
