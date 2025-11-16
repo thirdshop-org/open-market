@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { sellerOrderService, type SellerStats } from "@/lib/seller-orders"
 import { Loader2, Package, TrendingUp, Truck, CheckCircle } from "lucide-react"
+import { Navbar } from "./Navbar"
 
 export function DashboardContent() {
   const [stats, setStats] = useState<SellerStats | null>(null)
@@ -45,6 +46,7 @@ export function DashboardContent() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
+        <Navbar />
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />

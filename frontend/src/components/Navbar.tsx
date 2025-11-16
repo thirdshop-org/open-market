@@ -4,6 +4,7 @@ import { authService, type User } from '@/lib/pocketbase';
 import { messageService } from '@/lib/messages';
 import { CartButton } from '@/components/CartButton';
 import { LogOut, User as UserIcon, ShoppingBag, Menu, X, MessageSquare } from 'lucide-react';
+import { LogoAndBrand } from './LogoAndBrand';
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
@@ -58,10 +59,7 @@ export function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <a href="/" className="flex items-center space-x-2 font-bold text-xl">
-            <ShoppingBag className="h-6 w-6" />
-            <span>Open Market</span>
-          </a>
+          <LogoAndBrand />
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
@@ -74,9 +72,6 @@ export function Navbar() {
             
             {user ? (
               <>
-                <a href="/profile" className="text-sm font-medium hover:text-primary transition-colors">
-                  Mon profil
-                </a>
                 <a href="/my-products" className="text-sm font-medium hover:text-primary transition-colors">
                   Mes annonces
                 </a>
