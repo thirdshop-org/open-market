@@ -2,7 +2,7 @@
 import '../styles/global.css';
 import { Navbar } from '@/components/Navbar';
 import { ProductsWithSearch } from '@/components/ProductsWithSearch';
-import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ButtonLink';
 import { Plus } from 'lucide-react';
 ---
 
@@ -28,12 +28,13 @@ import { Plus } from 'lucide-react';
 						Gérez toutes vos annonces en un seul endroit
 					</p>
 				</div>
-				<Button asChild>
-					<a href="/products/new">
-						<Plus className="mr-2 h-4 w-4" />
-						Créer une annonce
-					</a>
-				</Button>
+				<ButtonLink 
+					href="/products/new" 
+					label="Créer une annonce"
+					client:load
+				>
+					<Plus className="h-4 w-4" slot="icon" />
+				</ButtonLink>
 			</div>
 
 			<!-- Recherche et liste des produits -->
