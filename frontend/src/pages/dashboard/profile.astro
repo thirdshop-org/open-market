@@ -1,14 +1,12 @@
 ---
-import Main from '@/layouts/main.astro';
-import { ProfileFormPage } from '@/components/ProfileFormPage';
+import Seller from '@/layouts/dashboard/seller.astro';
+import { ProfileForm } from '@/components/ProfileForm';
 
 const template = {
   title: "Mon profil - Dashboard - Open Market",
 };
 ---
 
-<Main content={template}>
-  <ProfileFormPage client:load />
-</Main>
-
-
+<Seller title={template.title} pageTitle="Mon profil">
+  <ProfileForm client:load />
+</Seller>
