@@ -19,11 +19,11 @@ import {
 const data = {
   navMain: [
     {
-      title: "Mes produits",
+      title: "Mes annonces",
       url: "#",
       items: [
         {
-          title: "Actuellement en ligne",
+          title: "En ligne",
           url: "/dashboard/products-online",
         },
       ],

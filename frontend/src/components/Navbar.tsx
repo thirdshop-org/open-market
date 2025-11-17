@@ -72,9 +72,6 @@ export function Navbar() {
             
             {user ? (
               <>
-                <a href="/my-products" className="text-sm font-medium hover:text-primary transition-colors">
-                  Mes annonces
-                </a>
                 <a href="/dashboard/orders-waiting-seller" className="text-sm font-medium hover:text-primary transition-colors">
                   Mes commandes
                 </a>
