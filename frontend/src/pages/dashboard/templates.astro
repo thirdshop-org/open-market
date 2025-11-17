@@ -1,0 +1,13 @@
+---
+import Seller from '@/layouts/dashboard/seller.astro';
+import { TemplateList } from '@/components/TemplateList';
+
+const template = {
+  title: "Mes templates - Dashboard - Open Market",
+};
+---
+
+<Seller title={template.title} pageTitle="Mes templates">
+  <TemplateList client:load />
+</Seller>
+

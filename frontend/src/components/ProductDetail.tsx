@@ -4,6 +4,7 @@ import { cartService } from '@/lib/cart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { authService } from '@/lib/pocketbase';
+import { getVisibleProductFields, type ProductField } from '@/lib/templates';
 import { 
   Loader2, 
   MapPin, 
@@ -18,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShoppingCart,
-  Check
+  Check,
+  FileText
 } from 'lucide-react';
 
 interface Props {
@@ -34,6 +36,7 @@ export function ProductDetail({ productId }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [customFields, setCustomFields] = useState<ProductField[]>([]);
 
   useEffect(() => {
     loadProduct();
@@ -51,6 +54,15 @@ export function ProductDetail({ productId }: Props) {
       const currentUser = authService.getCurrentUser();
       if (currentUser && data.seller === currentUser.id) {
         setIsOwner(true);
+      }
+
+      // Charger les champs personnalisés visibles
+      try {
+        const fields = await getVisibleProductFields(productId);
+        setCustomFields(fields);
+      } catch (err) {
+        console.error('Error loading custom fields:', err);
+        // Ne pas bloquer l'affichage du produit si les champs échouent
       }
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement du produit');
@@ -305,6 +317,35 @@ export function ProductDetail({ productId }: Props) {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Champs personnalisés */}
+          {customFields.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Caractéristiques supplémentaires
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {customFields.map((field) => (
+                  <div key={field.id} className="flex items-start gap-3">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                      <FileText className="h-3 w-3 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        {field.expand?.fieldId?.label || 'Champ'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {field.fieldValue || '-'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}

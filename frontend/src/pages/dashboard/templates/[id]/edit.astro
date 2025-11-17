@@ -1,0 +1,15 @@
+---
+import Seller from '@/layouts/dashboard/seller.astro';
+import { TemplateForm } from '@/components/TemplateForm';
+
+const { id } = Astro.params;
+
+const template = {
+  title: "Éditer le template - Dashboard - Open Market",
+};
+---
+
+<Seller title={template.title} pageTitle="Éditer le template">
+  <TemplateForm client:load templateId={id} />
+</Seller>
+

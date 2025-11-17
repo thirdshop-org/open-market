@@ -29,6 +29,10 @@ const data = {
       ],
     },
     {
+      title: "Mes templates",
+      url: "/dashboard/templates",
+    },
+    {
       title: "Mes commandes",
       url: "#",
       items: [

@@ -4,8 +4,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { productService, categoryService, type ProductFormData, type Category } from '@/lib/products';
-import { authService } from '@/lib/pocketbase';
-import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { authService, pb } from '@/lib/pocketbase';
+import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, FileText, Plus, Trash2 } from 'lucide-react';
+import {
+  fetchUserTemplates,
+  getTemplateFields,
+  copyTemplateFieldsToProduct,
+  attachFieldToProduct,
+  getProductFields,
+  fetchAllFieldsForUser,
+  type Template,
+  type ProductField,
+  type Field,
+} from '@/lib/templates';
 
 interface Props {
   productId?: string;
@@ -31,13 +42,34 @@ export function ProductForm({ productId }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!productId);
   const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // États pour les templates et champs personnalisés
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [customFields, setCustomFields] = useState<Array<{ fieldId: string; label: string; value: string; isVisible: boolean }>>([]);
+  const [availableFields, setAvailableFields] = useState<Field[]>([]);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   useEffect(() => {
     loadCategories();
+    loadTemplatesAndFields();
     if (productId) {
       loadProduct();
+    } else {
+      // Vérifier si un template est passé en paramètre d'URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const templateParam = urlParams.get('template');
+      if (templateParam) {
+        setSelectedTemplateId(templateParam);
+      }
     }
   }, [productId]);
+
+  useEffect(() => {
+    if (selectedTemplateId && !productId) {
+      loadTemplateData(selectedTemplateId);
+    }
+  }, [selectedTemplateId, productId]);
 
   const loadCategories = async () => {
     try {
@@ -48,6 +80,68 @@ export function ProductForm({ productId }: Props) {
       }
     } catch (error) {
       console.error('Error loading categories:', error);
+    }
+  };
+
+  const loadTemplatesAndFields = async () => {
+    try {
+      const currentUser = pb.authStore.model;
+      if (!currentUser) return;
+
+      const [userTemplates, fields] = await Promise.all([
+        fetchUserTemplates(currentUser.id),
+        fetchAllFieldsForUser(currentUser.id),
+      ]);
+
+      setTemplates(userTemplates);
+      setAvailableFields(fields);
+    } catch (error) {
+      console.error('Error loading templates and fields:', error);
+    }
+  };
+
+  const loadTemplateData = async (templateId: string) => {
+    setLoadingTemplate(true);
+    try {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) return;
+
+      // Pré-remplir le formulaire avec les données du template
+      setFormData({
+        title: template.title,
+        description: template.description,
+        price: template.price,
+        currency: template.currency,
+        category: template.category,
+        condition: template.condition,
+        status: 'Disponible',
+        location: template.location,
+        reference: template.reference || '',
+        compatibility: template.compatibility || '',
+      });
+
+      // Charger les champs du template
+      const templateFields = await getTemplateFields(templateId);
+      const fieldsWithLabels = templateFields.map(tf => ({
+        fieldId: tf.fieldId,
+        label: tf.expand?.fieldId?.label || '',
+        value: tf.fieldValue,
+        isVisible: tf.isVisibleByClients,
+      }));
+      setCustomFields(fieldsWithLabels);
+
+      // Charger les images du template (preview uniquement)
+      if (template.images && template.images.length > 0) {
+        const previews = template.images.map(img =>
+          pb.files.getUrl(template, img, { thumb: '200x200' })
+        );
+        setImagePreviews(previews);
+      }
+    } catch (error) {
+      console.error('Error loading template data:', error);
+      setMessage({ type: 'error', text: 'Erreur lors du chargement du template' });
+    } finally {
+      setLoadingTemplate(false);
     }
   };
 
@@ -137,12 +231,31 @@ export function ProductForm({ productId }: Props) {
         setMessage({ type: 'success', text: 'Produit mis à jour avec succès !' });
       } else {
         // Création
-        await productService.create(formData, images);
+        const newProduct = await productService.create(formData, images);
+        
+        // Sauvegarder les champs personnalisés si présents
+        if (customFields.length > 0) {
+          const fieldsToAttach = customFields.map(cf => ({
+            fieldId: cf.fieldId,
+            value: cf.value,
+            isVisible: cf.isVisible,
+          }));
+          
+          for (const field of fieldsToAttach) {
+            await attachFieldToProduct(
+              newProduct.id,
+              field.fieldId,
+              field.value,
+              field.isVisible
+            );
+          }
+        }
+        
         setMessage({ type: 'success', text: 'Produit créé avec succès !' });
         
         // Réinitialiser le formulaire
         setTimeout(() => {
-          window.location.href = '/my-products';
+          window.location.href = '/dashboard/products-online';
         }, 1500);
       }
     } catch (error: any) {
@@ -160,6 +273,52 @@ export function ProductForm({ productId }: Props) {
     );
   }
 
+  const handleAddCustomField = () => {
+    if (availableFields.length === 0) return;
+    
+    const firstAvailableField = availableFields.find(
+      f => !customFields.some(cf => cf.fieldId === f.id)
+    );
+    
+    if (firstAvailableField) {
+      setCustomFields([...customFields, {
+        fieldId: firstAvailableField.id,
+        label: firstAvailableField.label,
+        value: '',
+        isVisible: true,
+      }]);
+    }
+  };
+
+  const handleRemoveCustomField = (index: number) => {
+    setCustomFields(customFields.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateCustomFieldValue = (index: number, value: string) => {
+    const updated = [...customFields];
+    updated[index].value = value;
+    setCustomFields(updated);
+  };
+
+  const handleUpdateCustomFieldVisibility = (index: number, isVisible: boolean) => {
+    const updated = [...customFields];
+    updated[index].isVisible = isVisible;
+    setCustomFields(updated);
+  };
+
+  const handleChangeCustomFieldId = (index: number, newFieldId: string) => {
+    const field = availableFields.find(f => f.id === newFieldId);
+    if (!field) return;
+    
+    const updated = [...customFields];
+    updated[index] = {
+      ...updated[index],
+      fieldId: newFieldId,
+      label: field.label,
+    };
+    setCustomFields(updated);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto">
       {/* Message de retour */}
@@ -176,6 +335,42 @@ export function ProductForm({ productId }: Props) {
           )}
           <p className="text-sm">{message.text}</p>
         </div>
+      )}
+
+      {/* Sélecteur de template (uniquement en mode création) */}
+      {!productId && templates.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Utiliser un template
+            </CardTitle>
+            <CardDescription>
+              Gagnez du temps en utilisant un de vos templates
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <select
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              disabled={loadingTemplate}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">Aucun template (création manuelle)</option>
+              {templates.map(template => (
+                <option key={template.id} value={template.id}>
+                  {template.title}
+                </option>
+              ))}
+            </select>
+            {loadingTemplate && (
+              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Chargement du template...
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Informations principales */}
@@ -421,6 +616,76 @@ export function ProductForm({ productId }: Props) {
         </CardContent>
       </Card>
 
+      {/* Champs personnalisés */}
+      {!productId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Champs personnalisés</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddCustomField}
+                disabled={availableFields.length === customFields.length}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Ajouter un champ
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              Ajoutez des champs supplémentaires à votre produit
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {customFields.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Aucun champ personnalisé. Cliquez sur "Ajouter un champ" pour en créer.
+              </p>
+            ) : (
+              customFields.map((field, index) => (
+                <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <select
+                      value={field.fieldId}
+                      onChange={(e) => handleChangeCustomFieldId(index, e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                    >
+                      {availableFields.map(af => (
+                        <option key={af.id} value={af.id}>{af.label}</option>
+                      ))}
+                    </select>
+                    <Input
+                      value={field.value}
+                      onChange={(e) => handleUpdateCustomFieldValue(index, e.target.value)}
+                      placeholder="Valeur"
+                      maxLength={500}
+                    />
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={field.isVisible}
+                        onChange={(e) => handleUpdateCustomFieldVisibility(index, e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      Visible aux clients
+                    </label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveCustomField(index)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Actions */}
       <div className="flex gap-4">
         <Button type="submit" disabled={loading} className="flex-1">
@@ -434,7 +699,7 @@ export function ProductForm({ productId }: Props) {
           )}
         </Button>
         <Button type="button" variant="outline" asChild>
-          <a href="/my-products">Annuler</a>
+          <a href="/dashboard/products-online">Annuler</a>
         </Button>
       </div>
     </form>
