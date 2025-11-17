@@ -1,13 +1,13 @@
 ---
-import Main from '@/layouts/main.astro';
-import { OrdersPendingPage } from '@/components/OrdersPendingPage';
+import Seller from '@/layouts/dashboard/seller.astro';
+import { PendingOrders } from '@/components/PendingOrders';
 
 const template = {
   title: "Commandes en attente - Dashboard - Open Market",
 };
 ---
 
-<Main content={template}>
-  <OrdersPendingPage client:load />
-</Main>
+<Seller title={template.title} pageTitle="Commandes en attente">
+  <PendingOrders client:load />
+</Seller>
 

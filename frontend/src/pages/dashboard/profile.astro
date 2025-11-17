@@ -1,5 +1,5 @@
 ---
-import Seller from '@/layouts/dashboard/seller.astro';
+import SellerLayout from '@/layouts/dashboard/seller.astro';
 import { ProfileForm } from '@/components/ProfileForm';
 
 const template = {
@@ -7,6 +7,6 @@ const template = {
 };
 ---
 
-<Seller title={template.title} pageTitle="Mon profil">
+<SellerLayout title={template.title} pageTitle="Mon profil">
   <ProfileForm client:load />
-</Seller>
+</SellerLayout>

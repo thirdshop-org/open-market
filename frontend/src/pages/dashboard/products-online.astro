@@ -1,8 +1,13 @@
 ---
-import { ProductsOnlinePage } from '../../components/ProductsOnlinePage';
-import Main from '@/layouts/main.astro';
+import Seller from '@/layouts/dashboard/seller.astro';
+import { ProductListingOnline } from '@/components/ProductListingOnline';
+
+const template = {
+  title: "Articles en ligne - Dashboard - Open Market",
+};
 ---
 
-<Main content={{ title: "Articles en ligne - Dashboard - Open Market" }}>
-  <ProductsOnlinePage client:load />
-</Main>
+<Seller title={template.title} pageTitle="Articles en ligne">
+  <ProductListingOnline client:load />
+</Seller>
+
