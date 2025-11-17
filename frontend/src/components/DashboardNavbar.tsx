@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { authService, type User } from '@/lib/pocketbase';
-import { messageService } from '@/lib/messages';
 import { CartButton } from '@/components/CartButton';
-import { LogOut, User as UserIcon, ShoppingBag, Menu, X, MessageSquare } from 'lucide-react';
+import { LogOut, User as UserIcon, Menu, X } from 'lucide-react';
 import { UserNavbar } from './UserNavbar';
 
 export function DashboardNavbar() {
   const [user, setUser] = useState<User | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     // Vérifier l'utilisateur au chargement
@@ -18,36 +16,9 @@ export function DashboardNavbar() {
     // Observer les changements d'authentification
     authService.onChange((newUser) => {
       setUser(newUser);
-      if (newUser) {
-        loadUnreadCount();
-      } else {
-        setUnreadCount(0);
-      }
     });
 
-    // Charger le compteur de messages non lus
-    if (authService.isAuthenticated()) {
-      loadUnreadCount();
-
-      // S'abonner aux nouveaux messages
-      const unsubscribe = messageService.subscribe(() => {
-        loadUnreadCount();
-      });
-
-      return () => {
-        unsubscribe();
-      };
-    }
   }, []);
-
-  const loadUnreadCount = async () => {
-    try {
-      const count = await messageService.getUnreadCount();
-      setUnreadCount(count);
-    } catch (error) {
-      console.error('Error loading unread count:', error);
-    }
-  };
 
   const handleLogout = () => {
     authService.logout();
