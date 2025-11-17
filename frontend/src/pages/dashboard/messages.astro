@@ -1,0 +1,17 @@
+---
+import Seller from '@/layouts/dashboard/seller.astro';
+import { MessagingInterface } from '@/components/MessagingInterface';
+
+const template = {
+  title: "Messages - Dashboard - Open Market",
+};
+---
+
+<Seller title={template.title} pageTitle="Messages">
+  <MessagingInterface 
+    client:load
+    initialUserId={undefined}
+    initialProductId={undefined}
+  />
+</Seller>
+

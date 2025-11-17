@@ -51,7 +51,11 @@ const data = {
           url: "/dashboard/profile",
         },
       ],
-    }
+    },
+    {
+      title: "Messages",
+      url: "/dashboard/messages",
+    },
   ],
 }
 import { LogoAndBrand } from './LogoAndBrand';  

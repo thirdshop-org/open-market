@@ -73,17 +73,6 @@ export function DashboardNavbar() {
                 <a href="/dashboard/orders-waiting-seller" className="text-sm font-medium hover:text-primary transition-colors">
                   Mes commandes
                 </a>
-                <a href="/messages" className="text-sm font-medium hover:text-primary transition-colors relative">
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="h-4 w-4" />
-                    Messages
-                  </span>
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-2 px-1.5 py-0.5 bg-destructive text-destructive-foreground text-xs rounded-full font-medium min-w-[1.25rem] text-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </a>
                 <CartButton />
                 <div className="h-full flex items-center ml-auto">
                   <UserNavbar />
@@ -144,26 +133,6 @@ export function DashboardNavbar() {
                   className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                 >
                   Mes annonces
-                </a>
-                <a 
-                  href="/dashboard/orders-waiting-seller" 
-                  className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
-                >
-                  Mes commandes
-                </a>
-                <a 
-                  href="/messages" 
-                  className="block px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors relative"
-                >
-                  <span className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Messages
-                    {unreadCount > 0 && (
-                      <span className="px-1.5 py-0.5 bg-destructive text-destructive-foreground text-xs rounded-full font-medium">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </span>
                 </a>
                 <a 
                   href="/cart" 
