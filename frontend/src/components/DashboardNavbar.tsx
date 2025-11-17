@@ -4,13 +4,9 @@ import { authService, type User } from '@/lib/pocketbase';
 import { messageService } from '@/lib/messages';
 import { CartButton } from '@/components/CartButton';
 import { LogOut, User as UserIcon, ShoppingBag, Menu, X, MessageSquare } from 'lucide-react';
-import { LogoAndBrand } from './LogoAndBrand';
+import { UserNavbar } from './UserNavbar';
 
-type NavbarProps = {
-  isSticky?: boolean;
-}
-
-export function Navbar({ isSticky = true }: NavbarProps) {
+export function DashboardNavbar() {
   const [user, setUser] = useState<User | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -59,14 +55,12 @@ export function Navbar({ isSticky = true }: NavbarProps) {
   };
 
   return (
-      <nav className={`border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 ${isSticky ? 'sticky top-0 z-50' : ''}`}>
+    <nav className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <LogoAndBrand />
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4 w-full gap-4">
             <a href="/" className="text-sm font-medium hover:text-primary transition-colors">
               Accueil
             </a>
@@ -90,26 +84,9 @@ export function Navbar({ isSticky = true }: NavbarProps) {
                     </span>
                   )}
                 </a>
-                <a href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
-                  Tableau de bord
-                </a>
                 <CartButton />
-                <div className="flex items-center space-x-2 ml-4 pl-4 border-l">
-                  <div className="flex items-center space-x-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <UserIcon className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-sm font-medium">{user.username}</span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleLogout}
-                    className="ml-2"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Déconnexion
-                  </Button>
+                <div className="h-full flex items-center ml-auto">
+                  <UserNavbar />
                 </div>
               </>
             ) : (

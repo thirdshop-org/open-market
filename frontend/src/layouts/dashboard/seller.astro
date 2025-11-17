@@ -1,6 +1,5 @@
 ---
 import Main from '../main.astro';
-import { Navbar } from '@/components/Navbar';
 import { DashboardLayout } from '@/components/DashboardLayout';
 
 // Props interface pour le template
@@ -21,7 +20,6 @@ const {
 ---
 
 <Main content={{ title }}>
-  <Navbar client:load />
   
   <DashboardLayout 
     client:load

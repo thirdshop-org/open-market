@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/SideBar';
 import { Separator } from '@/components/ui/separator';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { DashboardNavbar } from './DashboardNavbar';
 
 interface Breadcrumb {
   label: string;
@@ -23,6 +24,7 @@ export function DashboardLayout({ pageTitle, breadcrumbs = [{ label: 'Dashboard'
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
+        <DashboardNavbar />
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
