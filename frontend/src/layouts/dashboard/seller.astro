@@ -1,42 +1,66 @@
 ---
 import Main from '../main.astro';
-const { title } = Astro.props;
 import { Navbar } from '@/components/Navbar';
-
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/SideBar';
 import { Separator } from '@/components/ui/separator';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { ProductListingOnline } from '@/components/ProductListingOnline';
+
+// Props interface pour le template
+interface Props {
+  title: string;
+  pageTitle?: string;
+  breadcrumbs?: Array<{
+    label: string;
+    href?: string;
+  }>;
+}
+
+const { 
+  title, 
+  pageTitle,
+  breadcrumbs = [{ label: 'Dashboard', href: '/dashboard' }]
+} = Astro.props;
+
+// Le dernier breadcrumb est toujours la page actuelle
+const currentPage = pageTitle || breadcrumbs[breadcrumbs.length - 1]?.label || title;
+const previousBreadcrumbs = breadcrumbs.slice(0, -1);
 ---
 
 <Main content={{ title }}>
-    <Navbar />
-	<slot />
-
-    <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
+  <Navbar />
+  
+  <SidebarProvider>
+    <AppSidebar />
+    <SidebarInset>
+      <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            {previousBreadcrumbs.map((breadcrumb, index) => (
+              <>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">
-                    Dashboard
-                  </BreadcrumbLink>
+                  {breadcrumb.href ? (
+                    <BreadcrumbLink href={breadcrumb.href}>
+                      {breadcrumb.label}
+                    </BreadcrumbLink>
+                  ) : (
+                    <span>{breadcrumb.label}</span>
+                  )}
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Articles en ligne</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-            <ProductListingOnline />
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+              </>
+            ))}
+            <BreadcrumbItem>
+              <BreadcrumbPage>{currentPage}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </header>
+      <div class="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <slot />
+      </div>
+    </SidebarInset>
+  </SidebarProvider>
 </Main>
