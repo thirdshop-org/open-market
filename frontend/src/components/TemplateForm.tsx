@@ -8,10 +8,12 @@ import {
   createTemplate, 
   updateTemplate, 
   getTemplateById,
+  createField,
+  attachFieldToProduct,
   type CreateTemplateData 
 } from '@/lib/templates';
 import { pb } from '@/lib/pocketbase';
-import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, Info } from 'lucide-react';
+import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, Info, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 import { CustomFieldManager } from '@/components/CustomFieldManager';
 
 interface Props {
@@ -39,6 +41,9 @@ export function TemplateForm({ templateId }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!templateId);
   const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // Gestion des champs en mode création
+  const [pendingFields, setPendingFields] = useState<Array<{ label: string; value: string; isVisible: boolean }>>([]);
 
   useEffect(() => {
     loadCategories();
@@ -212,6 +217,22 @@ export function TemplateForm({ templateId }: Props) {
         };
 
         const newTemplate = await createTemplate(templateData, currentUser.id);
+        
+        // Sauvegarder les champs pendants si présents
+        if (pendingFields.length > 0) {
+          for (const field of pendingFields) {
+            try {
+              // Créer le champ
+              const newField = await createField(field.label, currentUser.id);
+              // Attacher au template
+              await attachFieldToProduct(newTemplate.id, newField.id, field.value, field.isVisible);
+            } catch (err) {
+              console.error('Erreur lors de la sauvegarde d\'un champ:', err);
+              // Continue avec les autres champs même si un échoue
+            }
+          }
+        }
+        
         setMessage({ type: 'success', text: 'Template créé avec succès !' });
         
         setTimeout(() => {
@@ -495,20 +516,94 @@ export function TemplateForm({ templateId }: Props) {
           <CustomFieldManager templateId={templateId} />
         )}
 
-        {/* Info sur les champs personnalisés en mode création */}
+        {/* Gestionnaire de champs en mode création */}
         {!templateId && (
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-900">
-                  <p className="font-semibold mb-1">À propos des champs personnalisés</p>
-                  <p>
-                    Vous pourrez ajouter des champs personnalisés après la création du template.
-                    Cliquez sur "Créer le template" puis modifiez-le pour ajouter vos champs.
-                  </p>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Champs personnalisés (optionnel)</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPendingFields([...pendingFields, { label: '', value: '', isVisible: true }])}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter un champ
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                Ajoutez des champs spécifiques à ce template. Ils seront sauvegardés avec le template.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {pendingFields.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Aucun champ personnalisé.</p>
+                  <p className="text-xs mt-1">Les champs obligatoires (titre, prix, images...) sont inclus automatiquement.</p>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingFields.map((field, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 border rounded-lg bg-muted/30">
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={field.label}
+                          onChange={(e) => {
+                            const updated = [...pendingFields];
+                            updated[index].label = e.target.value;
+                            setPendingFields(updated);
+                          }}
+                          placeholder="Nom du champ (ex: Référence interne)"
+                          maxLength={100}
+                        />
+                        <Input
+                          value={field.value}
+                          onChange={(e) => {
+                            const updated = [...pendingFields];
+                            updated[index].value = e.target.value;
+                            setPendingFields(updated);
+                          }}
+                          placeholder="Valeur par défaut (optionnel)"
+                          maxLength={500}
+                        />
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={field.isVisible}
+                            onChange={(e) => {
+                              const updated = [...pendingFields];
+                              updated[index].isVisible = e.target.checked;
+                              setPendingFields(updated);
+                            }}
+                            className="w-4 h-4"
+                          />
+                          {field.isVisible ? (
+                            <span className="flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              Visible aux clients
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <EyeOff className="h-3 w-3" />
+                              Caché aux clients
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPendingFields(pendingFields.filter((_, i) => i !== index))}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
