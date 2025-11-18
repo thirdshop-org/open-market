@@ -1,5 +1,6 @@
 import { 
-    getTemplateFields, 
+    getTemplateFields,
+    getProductFields, 
     fetchDefaultFields, 
     fetchUserFields,
     type Field, 
@@ -15,6 +16,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, Dr
 import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./ui/select"
+import { Badge } from "./ui/badge"
 import {
     Plus,
     Settings,
@@ -45,6 +47,7 @@ export function TemplateEditor() {
     const [defaultFields, setDefaultFields] = useState<Field[]>([])
     const [userFields, setUserFields] = useState<Field[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isSearchFocused, setIsSearchFocused] = useState(false)
 
     // TODO: Récupérer l'ID utilisateur depuis le contexte d'authentification
     const userId = "user123" // Mock pour le moment
@@ -149,15 +152,26 @@ export function TemplateEditor() {
         })
     }
 
-    function handleSelectExistingField(field: Field) {
+    async function handleSelectExistingField(field: Field) {
         setSearchValue(field.label)
-        setFieldToEdit({
+        
+        // Charger la dernière configuration utilisée de ce champ (si disponible)
+        // Pour l'instant, on utilise des valeurs par défaut intelligentes
+        const fieldConfig: FieldFormData = {
             ...field,
             value: "",
             isVisibleByClients: true,
             isRequired: false,
             inputType: "text",
-        })
+        }
+        
+        // Si le champ a un parentId, on pourrait charger sa configuration parente
+        if (field.parentId) {
+            // TODO: Charger la config du champ parent si nécessaire
+        }
+        
+        setFieldToEdit(fieldConfig)
+        setIsSearchFocused(false)
     }
 
     function handleCreateNewFieldFromSearch() {
@@ -173,6 +187,7 @@ export function TemplateEditor() {
             isRequired: false,
             inputType: "text",
         })
+        setIsSearchFocused(false)
     }
 
 
@@ -204,15 +219,33 @@ export function TemplateEditor() {
         if (!open) {
           setFieldToEdit(null)
           setSearchValue("")
+          setIsSearchFocused(false)
         }
       }} direction="right">
         <DrawerContent className="min-w-4/10 max-w-none" >
             <DrawerHeader>
-            <DrawerTitle>
-              {fieldToEdit?.id ? "Ajouter un champ existant" : "Créer un nouveau champ"}
+            <DrawerTitle className="flex items-center gap-2">
+              {fieldToEdit?.id ? (
+                <>
+                  {fieldToEdit.isDefault ? (
+                    <Settings className="h-5 w-5" />
+                  ) : (
+                    <User className="h-5 w-5" />
+                  )}
+                  <span>Ajouter un champ existant</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-5 w-5" />
+                  <span>Créer un nouveau champ</span>
+                </>
+              )}
             </DrawerTitle>
             <DrawerDescription>
-              Recherchez un champ existant ou créez-en un nouveau pour votre template
+              {fieldToEdit?.id 
+                ? `Configurez comment "${fieldToEdit.label}" sera utilisé dans ce template`
+                : "Recherchez un champ existant ou créez-en un nouveau pour votre template"
+              }
             </DrawerDescription>
             </DrawerHeader>
 
@@ -220,121 +253,225 @@ export function TemplateEditor() {
 
                 {/* Field label with search */}
                 <div className="space-y-2">
-                    <Label>Nom du champ</Label>
+                    <div className="flex items-center justify-between">
+                        <Label>Nom du champ</Label>
+                        {fieldToEdit?.label && !isSearchFocused && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    setSearchValue(fieldToEdit.label)
+                                    setIsSearchFocused(true)
+                                }}
+                            >
+                                Changer
+                            </Button>
+                        )}
+                    </div>
                     <Command className="rounded-lg border shadow-md">
                         <CommandInput 
                             placeholder="Rechercher un champ ou créer un nouveau..." 
                             value={searchValue}
                             onValueChange={setSearchValue}
+                            onFocus={() => setIsSearchFocused(true)}
+                            onBlur={() => {
+                                // Petit délai pour permettre le clic sur les suggestions
+                                setTimeout(() => setIsSearchFocused(false), 200)
+                            }}
+                            disabled={!!(fieldToEdit?.label && !isSearchFocused)}
                         />
 
-                        <CommandList>
-                            <CommandEmpty>
-                                {searchValue ? (
-                                    <div className="py-6 text-center">
-                                        <p className="text-sm text-muted-foreground mb-2">
-                                            Aucun champ trouvé pour "{searchValue}"
-                                        </p>
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={handleCreateNewFieldFromSearch}
-                                        >
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Créer "{searchValue}"
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <p className="py-6 text-center text-sm">Commencez à taper pour rechercher...</p>
-                                )}
-                            </CommandEmpty>
+                        {isSearchFocused && (
+                            <CommandList>
+                                <CommandEmpty>
+                                    {searchValue ? (
+                                        <div className="py-6 text-center">
+                                            <p className="text-sm text-muted-foreground mb-2">
+                                                Aucun champ trouvé pour "{searchValue}"
+                                            </p>
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={handleCreateNewFieldFromSearch}
+                                            >
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Créer "{searchValue}"
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <p className="py-6 text-center text-sm">Commencez à taper pour rechercher...</p>
+                                    )}
+                                </CommandEmpty>
 
-                            {filteredDefaultFields.length > 0 && (
-                                <CommandGroup heading="Champs par défaut">
-                                    {filteredDefaultFields.map((field) => (
-                                        <CommandItem
-                                            key={field.id}
-                                            onSelect={() => handleSelectExistingField(field)}
-                                        >
-                                            <Settings className="mr-2 h-4 w-4" />
-                                            <span>{field.label}</span>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            )}
-
-                            {filteredUserFields.length > 0 && (
-                                <CommandGroup heading="Mes champs personnalisés">
-                                    {filteredUserFields.map((field) => (
-                                        <CommandItem
-                                            key={field.id}
-                                            onSelect={() => handleSelectExistingField(field)}
-                                        >
-                                            <User className="mr-2 h-4 w-4" />
-                                            <span>{field.label}</span>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            )}
-
-                            {!exactMatch && searchValue && (filteredDefaultFields.length > 0 || filteredUserFields.length > 0) && (
-                                <>
-                                    <CommandSeparator />
-                                    <CommandGroup>
-                                        <CommandItem onSelect={handleCreateNewFieldFromSearch}>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            <span>Créer un nouveau champ "{searchValue}"</span>
-                                        </CommandItem>
+                                {filteredDefaultFields.length > 0 && (
+                                    <CommandGroup heading="Champs par défaut">
+                                        {filteredDefaultFields.map((field) => (
+                                            <CommandItem
+                                                key={field.id}
+                                                onSelect={() => handleSelectExistingField(field)}
+                                            >
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                <span>{field.label}</span>
+                                            </CommandItem>
+                                        ))}
                                     </CommandGroup>
-                                </>
-                            )}
-                        </CommandList>
+                                )}
+
+                                {filteredUserFields.length > 0 && (
+                                    <CommandGroup heading="Mes champs personnalisés">
+                                        {filteredUserFields.map((field) => (
+                                            <CommandItem
+                                                key={field.id}
+                                                onSelect={() => handleSelectExistingField(field)}
+                                            >
+                                                <User className="mr-2 h-4 w-4" />
+                                                <span>{field.label}</span>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                )}
+
+                                {!exactMatch && searchValue && (filteredDefaultFields.length > 0 || filteredUserFields.length > 0) && (
+                                    <>
+                                        <CommandSeparator />
+                                        <CommandGroup>
+                                            <CommandItem onSelect={handleCreateNewFieldFromSearch}>
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                <span>Créer un nouveau champ "{searchValue}"</span>
+                                            </CommandItem>
+                                        </CommandGroup>
+                                    </>
+                                )}
+                            </CommandList>
+                        )}
                     </Command>
 
-                    {/* Afficher le label sélectionné */}
-                    {fieldToEdit?.label && (
-                        <div className="text-sm text-muted-foreground">
-                            Champ sélectionné: <strong>{fieldToEdit.label}</strong>
+                    {/* Afficher les informations du champ sélectionné */}
+                    {fieldToEdit?.label && !isSearchFocused && (
+                        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md border">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium">{fieldToEdit.label}</span>
+                                    {fieldToEdit.id ? (
+                                        fieldToEdit.isDefault ? (
+                                            <Badge variant="secondary" className="text-xs">
+                                                <Settings className="mr-1 h-3 w-3" />
+                                                Champ par défaut
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="text-xs">
+                                                <User className="mr-1 h-3 w-3" />
+                                                Champ personnalisé
+                                            </Badge>
+                                        )
+                                    ) : (
+                                        <Badge variant="default" className="text-xs">
+                                            <Plus className="mr-1 h-3 w-3" />
+                                            Nouveau champ
+                                        </Badge>
+                                    )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {fieldToEdit.id 
+                                        ? "Ce champ existe déjà et sera réutilisé" 
+                                        : "Un nouveau champ sera créé lors de l'enregistrement"
+                                    }
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
 
                 {/* Input type */}
-                <Select>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Selectionner le type de champ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {inputTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                    <Label>Type de champ</Label>
+                    <Select 
+                        value={fieldToEdit?.inputType || "text"}
+                        onValueChange={(value) => {
+                            if (fieldToEdit) {
+                                setFieldToEdit({ ...fieldToEdit, inputType: value })
+                            }
+                        }}
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Sélectionner le type de champ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {inputTypes.map((type) => (
+                                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                                ))}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </div>
 
                 {/* Field value */}
-                <Input type="text" placeholder="Valeur du champ" value={fieldToEdit?.value} onChange={(e) => {
-                    if (fieldToEdit) {
-                        setFieldToEdit({ ...fieldToEdit, value: e.target.value })
-                    }
-                }} />
+                <div className="space-y-2">
+                    <Label htmlFor="fieldValue">Valeur par défaut</Label>
+                    <Input 
+                        id="fieldValue"
+                        type="text" 
+                        placeholder="Valeur du champ" 
+                        value={fieldToEdit?.value || ""} 
+                        onChange={(e) => {
+                            if (fieldToEdit) {
+                                setFieldToEdit({ ...fieldToEdit, value: e.target.value })
+                            }
+                        }} 
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Cette valeur sera utilisée par défaut pour ce champ
+                    </p>
+                </div>
 
-                { /* Field is visible by clients */ }
-                <Checkbox id="isVisibleByClients" checked={fieldToEdit?.isVisibleByClients} onCheckedChange={(checked) => {
-                    if (fieldToEdit) {
-                        setFieldToEdit({ ...fieldToEdit, isVisibleByClients: checked === true })
-                    }
-                }} />
-                 <Label htmlFor="isVisibleByClients">Visible aux clients</Label>
+                {/* Options du champ */}
+                <div className="space-y-3 pt-2">
+                    <Label className="text-base">Options</Label>
+                    
+                    <div className="flex items-center space-x-2">
+                        <Checkbox 
+                            id="isVisibleByClients" 
+                            checked={fieldToEdit?.isVisibleByClients || false} 
+                            onCheckedChange={(checked) => {
+                                if (fieldToEdit) {
+                                    setFieldToEdit({ ...fieldToEdit, isVisibleByClients: checked === true })
+                                }
+                            }} 
+                        />
+                        <Label 
+                            htmlFor="isVisibleByClients" 
+                            className="text-sm font-normal cursor-pointer"
+                        >
+                            Visible aux clients
+                        </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-6">
+                        Ce champ sera affiché publiquement dans la fiche produit
+                    </p>
 
-                { /* Field is required   */ }
-                <Checkbox id="isRequired" checked={fieldToEdit?.isRequired} onCheckedChange={(checked) => {
-                    if (fieldToEdit) {
-                        setFieldToEdit({ ...fieldToEdit, isRequired: checked === true })
-                    }
-                }} />
-                <Label htmlFor="isRequired">Champ requis</Label>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox 
+                            id="isRequired" 
+                            checked={fieldToEdit?.isRequired || false} 
+                            onCheckedChange={(checked) => {
+                                if (fieldToEdit) {
+                                    setFieldToEdit({ ...fieldToEdit, isRequired: checked === true })
+                                }
+                            }} 
+                        />
+                        <Label 
+                            htmlFor="isRequired" 
+                            className="text-sm font-normal cursor-pointer"
+                        >
+                            Champ obligatoire
+                        </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-6">
+                        Ce champ devra être rempli obligatoirement
+                    </p>
+                </div>
 
             </form>
 
@@ -342,7 +479,7 @@ export function TemplateEditor() {
             <Button>Submit</Button>
             <DrawerClose>
                 <Button variant="outline">Cancel</Button>
-            </DrawerClose>
+            </DrawerClose>  
             </DrawerFooter>
         </DrawerContent>
     </Drawer>
