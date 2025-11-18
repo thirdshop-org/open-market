@@ -9,10 +9,8 @@ import {
 } from "@/lib/templates"
 import { useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "./ui/input-group"
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Label } from "./ui/label"
-import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "./ui/drawer"
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "./ui/drawer"
 import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./ui/select"
@@ -21,6 +19,14 @@ import {
     Plus,
     Settings,
     User,
+    Type,
+    Hash,
+    ListOrdered,
+    Calendar as CalendarIcon,
+    Edit,
+    Trash2,
+    Eye,
+    EyeOff,
   } from "lucide-react"
   
   import {
@@ -41,13 +47,27 @@ interface FieldFormData extends Field {
     inputType?: string;
 }
 
+// Type pour les champs du template (en mockup pour le moment)
+interface TemplateFieldConfig {
+    id: string; // ID temporaire pour le mockup
+    fieldId: string; // ID du champ (si existant) ou vide pour nouveau
+    label: string;
+    inputType: string;
+    value: string;
+    isVisibleByClients: boolean;
+    isRequired: boolean;
+    isDefault?: boolean; // Pour savoir si c'est un champ par défaut
+}
+
 export function TemplateEditor() {
     const [open, setOpen] = useState(false)
     const [fieldToEdit, setFieldToEdit] = useState<FieldFormData | null>(null)
+    const [fieldToEditIndex, setFieldToEditIndex] = useState<number | null>(null) // Pour savoir si on édite un champ existant
     const [defaultFields, setDefaultFields] = useState<Field[]>([])
     const [userFields, setUserFields] = useState<Field[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isSearchFocused, setIsSearchFocused] = useState(false)
+    const [templateFieldsConfig, setTemplateFieldsConfig] = useState<TemplateFieldConfig[]>([])
 
     // TODO: Récupérer l'ID utilisateur depuis le contexte d'authentification
     const userId = "user123" // Mock pour le moment
@@ -105,39 +125,46 @@ export function TemplateEditor() {
         updated: new Date().toISOString(),
     }
 
-    const templateFields : ProductField[] = [{
-        id: "1",
-        fieldId: "1",
-        fieldValue: "Valeur du champ",
-        isVisibleByClients: true,
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-        productId: "1",
-    }]
-
-    // Les champs sont maintenant chargés depuis l'API via defaultFields et userFields
+    // Les champs du template sont maintenant gérés par templateFieldsConfig
 
     const inputTypes = [
         {
             label: "Texte",
             value: "text",
+            icon: Type,
         },
         {
             label: "Nombre",
             value: "number",
+            icon: Hash,
         },
         {
             label: "Sélection",
             value: "select",
+            icon: ListOrdered,
         },
         {
             label: "Date",
             value: "date",
+            icon: CalendarIcon,
         },
     ]
 
+    // Helper pour obtenir l'icône d'un type de champ
+    const getFieldTypeIcon = (type: string) => {
+        const inputType = inputTypes.find(t => t.value === type)
+        return inputType?.icon || Type
+    }
+
+    // Helper pour obtenir le label d'un type de champ
+    const getFieldTypeLabel = (type: string) => {
+        const inputType = inputTypes.find(t => t.value === type)
+        return inputType?.label || "Texte"
+    }
+
     function handleAddNewField() {
         setSearchValue("")
+        setFieldToEditIndex(null) // Nouveau champ
         setFieldToEdit({
             id: "",
             label: "",
@@ -150,6 +177,59 @@ export function TemplateEditor() {
             isRequired: false,
             inputType: "text",
         })
+    }
+
+    function handleEditField(index: number) {
+        const field = templateFieldsConfig[index]
+        setFieldToEditIndex(index)
+        setSearchValue(field.label)
+        setFieldToEdit({
+            id: field.fieldId,
+            label: field.label,
+            isDefault: field.isDefault || false,
+            createdByAdmin: field.isDefault || false,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+            value: field.value,
+            isVisibleByClients: field.isVisibleByClients,
+            isRequired: field.isRequired,
+            inputType: field.inputType,
+        })
+    }
+
+    function handleDeleteField(index: number) {
+        setTemplateFieldsConfig(prev => prev.filter((_, i) => i !== index))
+    }
+
+    function handleSaveField() {
+        if (!fieldToEdit?.label) return
+
+        const newFieldConfig: TemplateFieldConfig = {
+            id: fieldToEditIndex !== null ? templateFieldsConfig[fieldToEditIndex].id : `temp-${Date.now()}`,
+            fieldId: fieldToEdit.id || "",
+            label: fieldToEdit.label,
+            inputType: fieldToEdit.inputType || "text",
+            value: fieldToEdit.value || "",
+            isVisibleByClients: fieldToEdit.isVisibleByClients || false,
+            isRequired: fieldToEdit.isRequired || false,
+            isDefault: fieldToEdit.isDefault,
+        }
+
+        if (fieldToEditIndex !== null) {
+            // Édition d'un champ existant
+            setTemplateFieldsConfig(prev => prev.map((field, i) => 
+                i === fieldToEditIndex ? newFieldConfig : field
+            ))
+        } else {
+            // Ajout d'un nouveau champ
+            setTemplateFieldsConfig(prev => [...prev, newFieldConfig])
+        }
+
+        // Fermer le drawer
+        setFieldToEdit(null)
+        setFieldToEditIndex(null)
+        setSearchValue("")
+        setIsSearchFocused(false)
     }
 
     async function handleSelectExistingField(field: Field) {
@@ -192,32 +272,130 @@ export function TemplateEditor() {
 
 
   return (
-    <div>
-      <h1>Template Editor</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Éditeur de Template</h1>
+          <p className="text-muted-foreground mt-1">
+            Configurez les champs qui seront utilisés dans vos produits
+          </p>
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center p-8">
           <p className="text-muted-foreground">Chargement des champs...</p>
         </div>
       ) : (
-        <>
-          {/* Affichage des champs du template (pour l'instant mockup) */}
-          {templateFields.map((field) => ( 
-              <InputGroup key={field.id} onClick={() => setFieldToEdit(null)}>
-                  <InputGroupInput placeholder="Type to search..." />
-                  <InputGroupAddon align="inline-end">
-                  <InputGroupButton variant="secondary">Options</InputGroupButton>
-                  </InputGroupAddon>
-              </InputGroup>
-          ))}
+        <div className="space-y-4">
+          {/* Liste des champs du template */}
+          {templateFieldsConfig.length > 0 ? (
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold">Champs du template ({templateFieldsConfig.length})</h2>
+              <div className="grid gap-3">
+                {templateFieldsConfig.map((field, index) => {
+                  const FieldIcon = getFieldTypeIcon(field.inputType)
+                  return (
+                    <div
+                      key={field.id}
+                      className="group flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      {/* Icône du type de champ */}
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                        <FieldIcon className="h-5 w-5 text-primary" />
+                      </div>
 
-          <Button onClick={() => handleAddNewField()}>Ajouter un nouveau champ</Button>
-        </>
+                      {/* Informations du champ */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium truncate">{field.label}</h3>
+                          {field.isDefault && (
+                            <Badge variant="secondary" className="text-xs">
+                              Défaut
+                            </Badge>
+                          )}
+                          {field.isRequired && (
+                            <Badge variant="destructive" className="text-xs">
+                              Requis
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <FieldIcon className="h-3 w-3" />
+                            {getFieldTypeLabel(field.inputType)}
+                          </span>
+                          {field.value && (
+                            <span className="truncate">
+                              Valeur: {field.value}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            {field.isVisibleByClients ? (
+                              <>
+                                <Eye className="h-3 w-3" />
+                                Visible
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="h-3 w-3" />
+                                Masqué
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditField(index)}
+                          title="Éditer"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteField(index)}
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center p-12 border-2 border-dashed rounded-lg">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold">Aucun champ ajouté</h3>
+                <p className="text-sm text-muted-foreground">
+                  Commencez par ajouter des champs à votre template
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Bouton d'ajout */}
+          <Button onClick={() => handleAddNewField()} size="lg" className="w-full">
+            <Plus className="mr-2 h-5 w-5" />
+            Ajouter un champ
+          </Button>
+        </div>
       )}
 
       <Drawer open={!!fieldToEdit} onOpenChange={(open) => {
         if (!open) {
           setFieldToEdit(null)
+          setFieldToEditIndex(null)
           setSearchValue("")
           setIsSearchFocused(false)
         }
@@ -476,9 +654,14 @@ export function TemplateEditor() {
             </form>
 
             <DrawerFooter>
-            <Button>Submit</Button>
-            <DrawerClose>
-                <Button variant="outline">Cancel</Button>
+            <Button 
+                onClick={handleSaveField}
+                disabled={!fieldToEdit?.label}
+            >
+                {fieldToEditIndex !== null ? "Mettre à jour" : "Ajouter le champ"}
+            </Button>
+            <DrawerClose asChild>
+                <Button variant="outline">Annuler</Button>
             </DrawerClose>  
             </DrawerFooter>
         </DrawerContent>
