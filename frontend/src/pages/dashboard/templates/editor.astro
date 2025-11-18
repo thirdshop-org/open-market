@@ -5,9 +5,13 @@ import { TemplateEditor } from '@/components/TemplateEditor';
 const template = {
   title: "Template Editeur - Dashboard - Open Market",
 };
+
+// Récupérer le templateId depuis l'URL
+const { searchParams } = Astro.url;
+const templateId = searchParams.get('id') || undefined;
 ---
 
 <Seller title={template.title} pageTitle="Template Editeur">
-  <TemplateEditor client:load />
+  <TemplateEditor client:load templateId={templateId} />
 </Seller>
 

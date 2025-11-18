@@ -3,6 +3,10 @@ import {
     getProductFields, 
     fetchDefaultFields, 
     fetchUserFields,
+    createField,
+    attachFieldToProduct,
+    updateProductField,
+    deleteProductField,
     type Field, 
     type ProductField,
     type Template 
@@ -25,6 +29,8 @@ import {
     Trash2,
     Eye,
     EyeOff,
+    Save,
+    Loader2,
   } from "lucide-react"
   
   import {
@@ -45,9 +51,9 @@ interface FieldFormData extends Field {
     fieldType?: string; // 'text' ou 'number'
 }
 
-// Type pour les champs du template (en mockup pour le moment)
+// Type pour les champs du template
 interface TemplateFieldConfig {
-    id: string; // ID temporaire pour le mockup
+    productFieldId?: string; // ID du ProductField (si déjà sauvegardé)
     fieldId: string; // ID du champ (si existant) ou vide pour nouveau
     label: string;
     fieldType: string; // 'text' ou 'number'
@@ -57,15 +63,21 @@ interface TemplateFieldConfig {
     isDefault?: boolean; // Pour savoir si c'est un champ par défaut
 }
 
-export function TemplateEditor() {
+interface TemplateEditorProps {
+    templateId?: string; // ID du template (optionnel pour créer un nouveau template)
+}
+
+export function TemplateEditor({ templateId }: TemplateEditorProps) {
     const [open, setOpen] = useState(false)
     const [fieldToEdit, setFieldToEdit] = useState<FieldFormData | null>(null)
     const [fieldToEditIndex, setFieldToEditIndex] = useState<number | null>(null) // Pour savoir si on édite un champ existant
     const [defaultFields, setDefaultFields] = useState<Field[]>([])
     const [userFields, setUserFields] = useState<Field[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
     const [isSearchFocused, setIsSearchFocused] = useState(false)
     const [templateFieldsConfig, setTemplateFieldsConfig] = useState<TemplateFieldConfig[]>([])
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
     // TODO: Récupérer l'ID utilisateur depuis le contexte d'authentification
     const userId = "user123" // Mock pour le moment
@@ -84,6 +96,25 @@ export function TemplateEditor() {
             // Charger les champs personnalisés de l'utilisateur
             const userFieldsData = await fetchUserFields(userId)
             setUserFields(userFieldsData)
+
+            // Si on a un templateId, charger ses champs
+            if (templateId) {
+                const productFields = await getProductFields(templateId)
+                
+                // Convertir ProductField en TemplateFieldConfig
+                const fieldsConfig: TemplateFieldConfig[] = productFields.map(pf => ({
+                    productFieldId: pf.id,
+                    fieldId: pf.fieldId,
+                    label: pf.expand?.fieldId?.label || "",
+                    fieldType: pf.expand?.fieldId?.fieldType || "text",
+                    value: pf.fieldValue,
+                    isVisibleByClients: pf.isVisibleByClients,
+                    isRequired: false, // TODO: à ajouter dans ProductField si nécessaire
+                    isDefault: pf.expand?.fieldId?.isDefault,
+                }))
+                
+                setTemplateFieldsConfig(fieldsConfig)
+            }
         } catch (error) {
             console.error("Erreur lors du chargement des champs:", error)
         } finally {
@@ -187,13 +218,14 @@ export function TemplateEditor() {
 
     function handleDeleteField(index: number) {
         setTemplateFieldsConfig(prev => prev.filter((_, i) => i !== index))
+        setHasUnsavedChanges(true)
     }
 
     function handleSaveField() {
         if (!fieldToEdit?.label) return
 
         const newFieldConfig: TemplateFieldConfig = {
-            id: fieldToEditIndex !== null ? templateFieldsConfig[fieldToEditIndex].id : `temp-${Date.now()}`,
+            productFieldId: fieldToEditIndex !== null ? templateFieldsConfig[fieldToEditIndex].productFieldId : undefined,
             fieldId: fieldToEdit.id || "",
             label: fieldToEdit.label,
             fieldType: fieldToEdit.fieldType || "text",
@@ -212,6 +244,9 @@ export function TemplateEditor() {
             // Ajout d'un nouveau champ
             setTemplateFieldsConfig(prev => [...prev, newFieldConfig])
         }
+
+        // Marquer comme modifié
+        setHasUnsavedChanges(true)
 
         // Fermer le drawer
         setFieldToEdit(null)
@@ -258,6 +293,76 @@ export function TemplateEditor() {
         setIsSearchFocused(false)
     }
 
+    async function handleSaveTemplate() {
+        if (!templateId) {
+            alert("Veuillez d'abord créer le template avant d'ajouter des champs")
+            return
+        }
+
+        setIsSaving(true)
+        try {
+            // Récupérer les ProductFields existants
+            const existingProductFields = await getProductFields(templateId)
+            const existingProductFieldIds = existingProductFields.map(pf => pf.id)
+            const currentProductFieldIds = templateFieldsConfig
+                .filter(f => f.productFieldId)
+                .map(f => f.productFieldId!)
+
+            // Supprimer les ProductFields qui ne sont plus dans la config
+            const productFieldsToDelete = existingProductFieldIds.filter(
+                id => !currentProductFieldIds.includes(id)
+            )
+            
+            for (const productFieldId of productFieldsToDelete) {
+                await deleteProductField(productFieldId)
+            }
+
+            // Pour chaque champ du template
+            for (const fieldConfig of templateFieldsConfig) {
+                let actualFieldId = fieldConfig.fieldId
+
+                // Si le champ n'existe pas encore (nouveau champ), le créer
+                if (!actualFieldId) {
+                    const newField = await createField(
+                        fieldConfig.label,
+                        userId,
+                        fieldConfig.fieldType
+                    )
+                    actualFieldId = newField.id
+                }
+
+                // Si c'est un nouveau ProductField (pas de productFieldId)
+                if (!fieldConfig.productFieldId) {
+                    // Attacher le champ au produit
+                    await attachFieldToProduct(
+                        templateId,
+                        actualFieldId,
+                        fieldConfig.value,
+                        fieldConfig.isVisibleByClients
+                    )
+                } else {
+                    // Mettre à jour le ProductField existant
+                    await updateProductField(
+                        fieldConfig.productFieldId,
+                        fieldConfig.value,
+                        fieldConfig.isVisibleByClients
+                    )
+                }
+            }
+
+            // Recharger les données pour synchroniser
+            await loadData()
+            setHasUnsavedChanges(false)
+            
+            alert("Template sauvegardé avec succès !")
+        } catch (error) {
+            console.error("Erreur lors de la sauvegarde:", error)
+            alert("Erreur lors de la sauvegarde du template")
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
 
   return (
     <div className="space-y-6">
@@ -265,10 +370,40 @@ export function TemplateEditor() {
         <div>
           <h1 className="text-3xl font-bold">Éditeur de Template</h1>
           <p className="text-muted-foreground mt-1">
-            Configurez les champs qui seront utilisés dans vos produits
+            {templateId 
+              ? "Configurez les champs qui seront utilisés dans vos produits"
+              : "Mode aperçu - Les champs ne seront pas sauvegardés sans ID de template"
+            }
           </p>
         </div>
+        {templateId && (
+          <Button 
+            onClick={handleSaveTemplate}
+            disabled={!hasUnsavedChanges || isSaving}
+            size="lg"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Sauvegarde...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-5 w-5" />
+                Sauvegarder {hasUnsavedChanges && "(*)"}
+              </>
+            )}
+          </Button>
+        )}
       </div>
+
+      {!templateId && (
+        <div className="rounded-lg border border-yellow-500 bg-yellow-50 dark:bg-yellow-950 p-4">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            <strong>Mode aperçu :</strong> Fournissez un ID de template pour activer la sauvegarde des champs.
+          </p>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center p-8">
@@ -285,7 +420,7 @@ export function TemplateEditor() {
                   const FieldIcon = getFieldTypeIcon(field.fieldType)
                   return (
                     <div
-                      key={field.id}
+                      key={field.productFieldId || field.fieldId || `field-${index}`}
                       className="group flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                     >
                       {/* Icône du type de champ */}
