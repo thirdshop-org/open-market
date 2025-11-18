@@ -1,0 +1,13 @@
+---
+import Seller from '@/layouts/dashboard/seller.astro';
+import { TemplateEditor } from '@/components/TemplateEditor';
+
+const template = {
+  title: "Template Editeur - Dashboard - Open Market",
+};
+---
+
+<Seller title={template.title} pageTitle="Template Editeur">
+  <TemplateEditor client:load />
+</Seller>
+
