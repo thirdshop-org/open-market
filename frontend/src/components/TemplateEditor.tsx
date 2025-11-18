@@ -123,25 +123,27 @@ export function TemplateEditor() {
 
         <Button onClick={() => handleAddNewField()}>Ajouter un nouveau champ</Button>
 
-      <Drawer open={!!fieldToEdit} onOpenChange={() => setFieldToEdit(null)} direction="right"  >
-        <DrawerContent>
+      <Drawer open={!!fieldToEdit} onOpenChange={() => setFieldToEdit(null)} direction="right">
+        <DrawerContent className="min-w-4/10 max-w-none" >
             <DrawerHeader>
-            <DrawerTitle>{fieldToEdit?.label}</DrawerTitle>
-            <DrawerDescription>This action cannot be undone.</DrawerDescription>
+            <DrawerTitle>Création d'un nouveau champ</DrawerTitle>
+            <DrawerDescription>Recherchez le champ que vous souhaitez ajouter à votre template</DrawerDescription>
             </DrawerHeader>
-            
+
             <form className="space-y-4 p-4">
 
                 {/* Field label */}
-                <Input type="text" placeholder="Nom du champ" value={fieldToEdit?.label} onChange={(e) => {
-                    if (fieldToEdit) {
-                        setFieldToEdit({ ...fieldToEdit, label: e.target.value })
-                    }
-                }} />
 
                 <Command className="rounded-lg border shadow-md md:min-w-[450px]">
-                    <CommandInput placeholder="Type a command or search..." />
-                    <CommandList>
+                    <CommandInput placeholder="Type a command or search..." asChild value={fieldToEdit?.label} >
+                        <Input type="text" placeholder="Nom du champ" value={fieldToEdit?.label} onChange={(e) => {
+                            if (fieldToEdit) {
+                                setFieldToEdit({ ...fieldToEdit, label: e.target.value })
+                            }
+                        }} />
+                    </CommandInput>
+
+                    <CommandList  >
                         <CommandEmpty>No results found.</CommandEmpty>
                         <CommandGroup heading="Suggestions">
                             <CommandItem>
