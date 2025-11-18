@@ -21,8 +21,6 @@ import {
     User,
     Type,
     Hash,
-    ListOrdered,
-    Calendar as CalendarIcon,
     Edit,
     Trash2,
     Eye,
@@ -44,7 +42,7 @@ interface FieldFormData extends Field {
     value?: string;
     isVisibleByClients?: boolean;
     isRequired?: boolean;
-    inputType?: string;
+    fieldType?: string; // 'text' ou 'number'
 }
 
 // Type pour les champs du template (en mockup pour le moment)
@@ -52,7 +50,7 @@ interface TemplateFieldConfig {
     id: string; // ID temporaire pour le mockup
     fieldId: string; // ID du champ (si existant) ou vide pour nouveau
     label: string;
-    inputType: string;
+    fieldType: string; // 'text' ou 'number'
     value: string;
     isVisibleByClients: boolean;
     isRequired: boolean;
@@ -127,7 +125,7 @@ export function TemplateEditor() {
 
     // Les champs du template sont maintenant gérés par templateFieldsConfig
 
-    const inputTypes = [
+    const fieldTypes = [
         {
             label: "Texte",
             value: "text",
@@ -138,28 +136,18 @@ export function TemplateEditor() {
             value: "number",
             icon: Hash,
         },
-        {
-            label: "Sélection",
-            value: "select",
-            icon: ListOrdered,
-        },
-        {
-            label: "Date",
-            value: "date",
-            icon: CalendarIcon,
-        },
     ]
 
     // Helper pour obtenir l'icône d'un type de champ
     const getFieldTypeIcon = (type: string) => {
-        const inputType = inputTypes.find(t => t.value === type)
-        return inputType?.icon || Type
+        const fieldType = fieldTypes.find(t => t.value === type)
+        return fieldType?.icon || Type
     }
 
     // Helper pour obtenir le label d'un type de champ
     const getFieldTypeLabel = (type: string) => {
-        const inputType = inputTypes.find(t => t.value === type)
-        return inputType?.label || "Texte"
+        const fieldType = fieldTypes.find(t => t.value === type)
+        return fieldType?.label || "Texte"
     }
 
     function handleAddNewField() {
@@ -175,7 +163,7 @@ export function TemplateEditor() {
             value: "",
             isVisibleByClients: true,
             isRequired: false,
-            inputType: "text",
+            fieldType: "text",
         })
     }
 
@@ -193,7 +181,7 @@ export function TemplateEditor() {
             value: field.value,
             isVisibleByClients: field.isVisibleByClients,
             isRequired: field.isRequired,
-            inputType: field.inputType,
+            fieldType: field.fieldType,
         })
     }
 
@@ -208,7 +196,7 @@ export function TemplateEditor() {
             id: fieldToEditIndex !== null ? templateFieldsConfig[fieldToEditIndex].id : `temp-${Date.now()}`,
             fieldId: fieldToEdit.id || "",
             label: fieldToEdit.label,
-            inputType: fieldToEdit.inputType || "text",
+            fieldType: fieldToEdit.fieldType || "text",
             value: fieldToEdit.value || "",
             isVisibleByClients: fieldToEdit.isVisibleByClients || false,
             isRequired: fieldToEdit.isRequired || false,
@@ -242,7 +230,7 @@ export function TemplateEditor() {
             value: "",
             isVisibleByClients: true,
             isRequired: false,
-            inputType: "text",
+            fieldType: field.fieldType || "text", // Récupérer fieldType depuis le champ ou "text" par défaut
         }
         
         // Si le champ a un parentId, on pourrait charger sa configuration parente
@@ -265,7 +253,7 @@ export function TemplateEditor() {
             value: "",
             isVisibleByClients: true,
             isRequired: false,
-            inputType: "text",
+            fieldType: "text",
         })
         setIsSearchFocused(false)
     }
@@ -294,7 +282,7 @@ export function TemplateEditor() {
               <h2 className="text-lg font-semibold">Champs du template ({templateFieldsConfig.length})</h2>
               <div className="grid gap-3">
                 {templateFieldsConfig.map((field, index) => {
-                  const FieldIcon = getFieldTypeIcon(field.inputType)
+                  const FieldIcon = getFieldTypeIcon(field.fieldType)
                   return (
                     <div
                       key={field.id}
@@ -323,7 +311,7 @@ export function TemplateEditor() {
                         <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <FieldIcon className="h-3 w-3" />
-                            {getFieldTypeLabel(field.inputType)}
+                            {getFieldTypeLabel(field.fieldType)}
                           </span>
                           {field.value && (
                             <span className="truncate">
@@ -561,14 +549,14 @@ export function TemplateEditor() {
                     )}
                 </div>
 
-                {/* Input type */}
+                {/* Field type */}
                 <div className="space-y-2">
                     <Label>Type de champ</Label>
                     <Select 
-                        value={fieldToEdit?.inputType || "text"}
+                        value={fieldToEdit?.fieldType || "text"}
                         onValueChange={(value) => {
                             if (fieldToEdit) {
-                                setFieldToEdit({ ...fieldToEdit, inputType: value })
+                                setFieldToEdit({ ...fieldToEdit, fieldType: value })
                             }
                         }}
                     >
@@ -577,7 +565,7 @@ export function TemplateEditor() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                {inputTypes.map((type) => (
+                                {fieldTypes.map((type) => (
                                     <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                                 ))}
                             </SelectGroup>
@@ -590,8 +578,8 @@ export function TemplateEditor() {
                     <Label htmlFor="fieldValue">Valeur par défaut</Label>
                     <Input 
                         id="fieldValue"
-                        type="text" 
-                        placeholder="Valeur du champ" 
+                        type={fieldToEdit?.fieldType === "number" ? "number" : "text"}
+                        placeholder={fieldToEdit?.fieldType === "number" ? "Entrer un nombre" : "Valeur du champ"}
                         value={fieldToEdit?.value || ""} 
                         onChange={(e) => {
                             if (fieldToEdit) {

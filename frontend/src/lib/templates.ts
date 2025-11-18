@@ -10,6 +10,7 @@ import { pb } from './pocketbase';
 export interface Field {
   id: string;
   label: string;
+  fieldType?: string; // 'text' ou 'number'
   parentId?: string;
   isDefault: boolean;
   createdByAdmin: boolean;
@@ -271,11 +272,12 @@ export async function fetchAllFieldsForUser(userId: string): Promise<Field[]> {
 /**
  * Créer un nouveau champ personnalisé
  */
-export async function createField(label: string, userId: string): Promise<Field> {
+export async function createField(label: string, userId: string, fieldType: string = 'text'): Promise<Field> {
   try {
     const record = await pb.collection('fields').create({
       label,
       userId,
+      fieldType,
       isDefault: false,
       createdByAdmin: false,
     });
