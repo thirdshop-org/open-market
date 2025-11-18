@@ -3,6 +3,8 @@ import {
     getProductFields, 
     fetchDefaultFields, 
     fetchUserFields,
+    getDefaultTemplate,
+    getTemplateById,
     createField,
     attachFieldToProduct,
     updateProductField,
@@ -67,7 +69,7 @@ interface TemplateEditorProps {
     templateId?: string; // ID du template (optionnel pour créer un nouveau template)
 }
 
-export function TemplateEditor({ templateId }: TemplateEditorProps) {
+export function TemplateEditor({ templateId: initialTemplateId }: TemplateEditorProps) {
     const [open, setOpen] = useState(false)
     const [fieldToEdit, setFieldToEdit] = useState<FieldFormData | null>(null)
     const [fieldToEditIndex, setFieldToEditIndex] = useState<number | null>(null) // Pour savoir si on édite un champ existant
@@ -78,6 +80,8 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
     const [isSearchFocused, setIsSearchFocused] = useState(false)
     const [templateFieldsConfig, setTemplateFieldsConfig] = useState<TemplateFieldConfig[]>([])
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    const [currentTemplateId, setCurrentTemplateId] = useState<string | undefined>(initialTemplateId)
+    const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null)
 
     // TODO: Récupérer l'ID utilisateur depuis le contexte d'authentification
     const userId = "user123" // Mock pour le moment
@@ -97,9 +101,30 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
             const userFieldsData = await fetchUserFields(userId)
             setUserFields(userFieldsData)
 
+            // Déterminer quel template utiliser
+            let templateToUse = currentTemplateId
+
+            // Si pas d'ID fourni, charger le template par défaut
+            if (!templateToUse) {
+                const defaultTemplate = await getDefaultTemplate(userId)
+                if (defaultTemplate) {
+                    templateToUse = defaultTemplate.id
+                    setCurrentTemplateId(defaultTemplate.id)
+                    setCurrentTemplate(defaultTemplate)
+                }
+            } else if (!currentTemplate) {
+                // Charger les infos du template si on a un ID mais pas encore les données
+                try {
+                    const template = await getTemplateById(templateToUse)
+                    setCurrentTemplate(template)
+                } catch (error) {
+                    console.error("Erreur lors du chargement du template:", error)
+                }
+            }
+
             // Si on a un templateId, charger ses champs
-            if (templateId) {
-                const productFields = await getProductFields(templateId)
+            if (templateToUse) {
+                const productFields = await getProductFields(templateToUse)
                 
                 // Convertir ProductField en TemplateFieldConfig
                 const fieldsConfig: TemplateFieldConfig[] = productFields.map(pf => ({
@@ -294,15 +319,15 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
     }
 
     async function handleSaveTemplate() {
-        if (!templateId) {
-            alert("Veuillez d'abord créer le template avant d'ajouter des champs")
+        if (!currentTemplateId) {
+            alert("Aucun template trouvé. Veuillez créer un template avant d'ajouter des champs.")
             return
         }
 
         setIsSaving(true)
         try {
             // Récupérer les ProductFields existants
-            const existingProductFields = await getProductFields(templateId)
+            const existingProductFields = await getProductFields(currentTemplateId)
             const existingProductFieldIds = existingProductFields.map(pf => pf.id)
             const currentProductFieldIds = templateFieldsConfig
                 .filter(f => f.productFieldId)
@@ -335,7 +360,7 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
                 if (!fieldConfig.productFieldId) {
                     // Attacher le champ au produit
                     await attachFieldToProduct(
-                        templateId,
+                        currentTemplateId,
                         actualFieldId,
                         fieldConfig.value,
                         fieldConfig.isVisibleByClients
@@ -370,13 +395,13 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
         <div>
           <h1 className="text-3xl font-bold">Éditeur de Template</h1>
           <p className="text-muted-foreground mt-1">
-            {templateId 
-              ? "Configurez les champs qui seront utilisés dans vos produits"
-              : "Mode aperçu - Les champs ne seront pas sauvegardés sans ID de template"
+            {currentTemplateId 
+              ? `Configurez les champs qui seront utilisés dans vos produits ${currentTemplate ? `(${currentTemplate.title})` : ''}`
+              : "Chargement du template par défaut..."
             }
           </p>
         </div>
-        {templateId && (
+        {currentTemplateId && (
           <Button 
             onClick={handleSaveTemplate}
             disabled={!hasUnsavedChanges || isSaving}
@@ -397,10 +422,10 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
         )}
       </div>
 
-      {!templateId && (
+      {!currentTemplateId && !isLoading && (
         <div className="rounded-lg border border-yellow-500 bg-yellow-50 dark:bg-yellow-950 p-4">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            <strong>Mode aperçu :</strong> Fournissez un ID de template pour activer la sauvegarde des champs.
+            <strong>Aucun template trouvé :</strong> Veuillez créer un template (produit avec parentId vide) pour commencer.
           </p>
         </div>
       )}
