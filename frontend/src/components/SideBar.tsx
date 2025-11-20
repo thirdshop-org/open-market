@@ -53,6 +53,16 @@ const data = {
       ],
     },
     {
+      title: "Mes stocks",
+      url: "/dashboard/stocks",
+      items: [
+        {
+          title: "Mes stocks",
+          url: "/dashboard/stocks",
+        },
+      ],
+    },
+    {
       title: "Mon profil",
       url: "/dashboard/profile",
       items: [
