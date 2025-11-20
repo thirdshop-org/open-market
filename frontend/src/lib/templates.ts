@@ -46,22 +46,9 @@ export interface Template {
   id: string;
   title: string;
   description: string;
-  price: number;
-  currency: string;
   images: string[];
-  category: string;
-  condition: string;
-  seller: string;
-  status: string;
-  location: string;
-  views?: number;
-  reference?: string;
-  compatibility?: string;
-  availableFrom?: string;
-  availableUntil?: string;
-  quantity?: number;
-  minStockAlert?: number;
-  parentId: null; // Important: null pour un template
+  createdBy: string;
+  isDefaultTemplate: boolean;
   created: string;
   updated: string;
 }
@@ -99,10 +86,9 @@ export interface UpdateTemplateData extends Partial<CreateTemplateData> {}
  */
 export async function fetchUserTemplates(userId: string): Promise<Template[]> {
   try {
-    const records = await pb.collection('products').getFullList({
-      filter: `seller = "${userId}" && parentId = null`,
+    const records = await pb.collection('productsTemplates').getFullList({
+      filter: `createdBy = "${userId}"`,
       sort: '-created',
-      expand: 'category',
     });
     return records as unknown as Template[];
   } catch (error) {
@@ -130,24 +116,18 @@ export async function getTemplateById(id: string): Promise<Template> {
  * Récupérer le template par défaut (premier template avec parentId null)
  */
 export async function getDefaultTemplate(userId?: string): Promise<Template | null> {
+
   try {
-    const filter = 'parentId = null'
+    const filter = `seller = "${userId}" && isDefaultTemplate = true`
     
-    const records = await pb.collection('products').getList(1, 1, {
-      filter,
-      sort: '-created',
-      expand: 'category',
-    });
-    
-    if (records.items.length > 0) {
-      return records.items[0] as unknown as Template;
-    }
-    
-    return null;
+    const record = await pb.collection('products').getFirstListItem(filter);
+    return record as unknown as Template;
+
   } catch (error) {
     console.error('Erreur lors de la récupération du template par défaut:', error);
     return null;
   }
+
 }
 
 /**

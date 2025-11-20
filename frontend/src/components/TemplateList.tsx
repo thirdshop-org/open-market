@@ -208,6 +208,7 @@ export function TemplateList() {
                     variant="outline"
                     size="sm"
                     asChild
+                    disabled={template.isDefaultTemplate}
                   >
                     <a href={`/dashboard/templates/${template.id}/edit`}>
                       <Edit className="h-3.5 w-3.5" />
