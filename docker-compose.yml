@@ -11,11 +11,11 @@ services:
       - "${PB_PORT:-8080}:8080"
     volumes:
       # Persistance des données (base de données, fichiers uploadés, etc.)
-      - pb_data:/pb/pb_data
+      - ./backend/pb_data:/pb/pb_data
       # Persistance des migrations
-      - pb_migrations:/pb/pb_migrations
-      # Optionnel : montage local des migrations pour le développement
-      # - ./backend/pb_migrations:/pb/pb_migrations
+      - ./backend/pb_migrations:/pb/pb_migrations
+      
+      - ./backend/pb_hooks:/pb/pb_hooks
     environment:
       # Variables d'environnement pour PocketBase
       # Ces variables peuvent être personnalisées selon vos besoins
@@ -28,14 +28,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-volumes:
-  # Volume nommé pour les données PocketBase
-  pb_data:
-    driver: local
-  # Volume nommé pour les migrations
-  pb_migrations:
-    driver: local
 
 networks:
   open-market-network:
