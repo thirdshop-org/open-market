@@ -409,36 +409,10 @@ export function ProductForm({ productId }: Props) {
         </CardContent>
       </Card>
 
-      {/* Informations principales */}
+      {/* Required fields */}
       <Card>
         <CardHeader>
-          <CardTitle>Informations principales</CardTitle>
-          <CardDescription>Décrivez votre produit en détail</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              rows={6}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Décrivez en détail l'état, les caractéristiques et tout autre information importante..."
-            />
-          </div>
-
-        </CardContent>
-      </Card>
-
-      {/* Catégorie et état */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Catégorie et état</CardTitle>
+          <CardTitle>Informations obligatoires</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -475,28 +449,20 @@ export function ProductForm({ productId }: Props) {
                 <option value="Reconditionné">Reconditionné</option>
               </select>
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Prix */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Prix</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="price">Prix *</Label>
-              <InputGroup>
-                <InputGroupAddon>
-                  <InputGroupText>€</InputGroupText>
-                </InputGroupAddon>
-                <InputGroupInput placeholder="0.00" name="price" value={formData.price} onChange={handleChange} required disabled={loading} />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupText>EUR</InputGroupText>
-                </InputGroupAddon>
-              </InputGroup>
+            <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="price">Prix *</Label>
+                <InputGroup>
+                  <InputGroupAddon>
+                    <InputGroupText>€</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput placeholder="0.00" name="price" value={formData.price} onChange={handleChange} required disabled={loading} />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupText>EUR</InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
+              </div>
             </div>
           </div>
 
