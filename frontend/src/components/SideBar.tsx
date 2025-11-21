@@ -19,22 +19,12 @@ import {
 const data = {
   navMain: [
     {
-      title: "Mes annonces",
+      title: "Mes Produits",
       url: "#",
       items: [
         {
           title: "En ligne",
           url: "/dashboard/products-online",
-        },
-      ],
-    },
-    {
-      title: "Mes templates",
-      url: "/dashboard/templates",
-      items: [
-        {
-          title: "Editeur",
-          url: "/dashboard/templates/editor",
         },
       ],
     },
@@ -49,16 +39,6 @@ const data = {
         {
           title: "En attente du vendeur",
           url: "/dashboard/orders-waiting-seller",
-        },
-      ],
-    },
-    {
-      title: "Mes stocks",
-      url: "/dashboard/stocks",
-      items: [
-        {
-          title: "Mes stocks",
-          url: "/dashboard/stocks",
         },
       ],
     },
