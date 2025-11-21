@@ -5,14 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { productService, categoryService, type ProductFormData, type Category } from '@/lib/products';
 import { authService, pb } from '@/lib/pocketbase';
-import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, FileText, Plus, Trash2 } from 'lucide-react';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel"
+import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, FileText, Plus, Trash2, Badge as BadgeIcon, ListPlus, Type, List, Check } from 'lucide-react';
+import { Badge } from "@/components/ui/badge"
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 import {
   fetchUserTemplates,
   getTemplateFields,
@@ -31,6 +29,23 @@ interface Props {
 }
 
 export function ProductForm({ productId }: Props) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedField, setSelectedField] = useState<Field | null>(null);
+  const [options, setOptions] = useState<string[]>([]);
+  const [fieldName, setFieldName] = useState('');
+  const [fieldValue, setFieldValue] = useState('');
+  const [fieldType, setFieldType] = useState<'text' | 'number' | 'date' | 'checkbox' | 'radio' | 'select' | 'textarea'>('text');
+  const [fieldOptions, setFieldOptions] = useState<string[]>([]);
+  const [fieldRequired, setFieldRequired] = useState(false);
+  const [fieldVisible, setFieldVisible] = useState(true);
+  const [fieldDescription, setFieldDescription] = useState('');
+  const [fieldPlaceholder, setFieldPlaceholder] = useState('');
+  const [fieldDefaultValue, setFieldDefaultValue] = useState('');
+
+  function handleAddField() {
+    setIsDialogOpen(true);
+  }
+
   const [formData, setFormData] = useState<ProductFormData>({
     title: '',
     description: '',
@@ -523,6 +538,183 @@ export function ProductForm({ productId }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Champs personnalisés</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {customFields.length === 0 ? (
+            // État vide avec guide
+            <div className="text-center py-8 space-y-4">
+              <div className="inline-flex p-4 rounded-full bg-primary/10">
+                <ListPlus className="w-8 h-8 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-medium">Personnalisez votre annonce</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Ajoutez des informations spécifiques comme la couleur, taille, référence...
+                  pour aider les acheteurs à trouver exactement ce qu'ils cherchent.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
+                  + Couleur
+                </Badge>
+                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
+                  + Taille
+                </Badge>
+                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
+                  + Référence
+                </Badge>
+                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
+                  + Marque
+                </Badge>
+              </div>
+              <Button type="button" onClick={handleAddCustomField}>
+                <Plus className="w-4 h-4 mr-2" />
+                Créer un champ personnalisé
+              </Button>
+            </div>
+          ) : (
+            // Liste des champs + bouton d'ajout
+            <>
+              {customFields.map((field) => (
+                <CustomFieldRow key={field.id} field={field} />
+              ))}
+              <Button variant="outline" className="w-full">
+                <Plus className="w-4 h-4 mr-2" />
+                Ajouter un champ
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            Créer un champ personnalisé
+          </Button>
+        </DialogTrigger>
+        
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Nouveau champ personnalisé</DialogTitle>
+            <DialogDescription>
+              Ajoutez une information spécifique à votre article
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Étape 1 : Nom du champ */}
+            <div className="space-y-2">
+              <Label htmlFor="field-name">
+                Nom du champ <span className="text-destructive">*</span>
+              </Label>
+              <Input 
+                id="field-name"
+                placeholder="ex: Couleur" 
+                value={fieldName}
+                onChange={(e) => setFieldName(e.target.value)}
+              />
+            </div>
+
+            {/* Étape 2 : Type de champ */}
+            <div className="space-y-2">
+              <Label>Type de champ</Label>
+              <RadioGroup value={fieldType} onValueChange={setFieldType}>
+                <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:bg-accent">
+                  <RadioGroupItem value="text" id="text" />
+                  <Label htmlFor="text" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <Type className="w-4 h-4" />
+                      <div>
+                        <p className="font-medium">Texte libre</p>
+                        <p className="text-xs text-muted-foreground">
+                          L'acheteur pourra saisir n'importe quelle valeur
+                        </p>
+                      </div>
+                    </div>
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:bg-accent">
+                  <RadioGroupItem value="select" id="select" />
+                  <Label htmlFor="select" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <List className="w-4 h-4" />
+                      <div>
+                        <p className="font-medium">Liste déroulante</p>
+                        <p className="text-xs text-muted-foreground">
+                          Définissez les valeurs possibles (ex: S, M, L, XL)
+                        </p>
+                      </div>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Étape 3 : Valeur ou Options */}
+            {fieldType === 'text' ? (
+              <div className="space-y-2">
+                <Label htmlFor="field-value">Valeur</Label>
+                <Input 
+                  id="field-value"
+                  placeholder="ex: Rouge" 
+                  value={fieldValue}
+                  onChange={(e) => setFieldValue(e.target.value)}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Options de la liste</Label>
+                <div className="space-y-2">
+                  {options.map((option, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input 
+                        placeholder={`Option ${index + 1}`}
+                        value={option}
+                        onChange={(e) => updateOption(index, e.target.value)}
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => removeOption(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={addOption}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter une option
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleAddField}>
+              <Check className="w-4 h-4 mr-2" />
+              Ajouter le champ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       {/* Actions */}
       <div className="flex gap-4">
