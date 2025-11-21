@@ -469,6 +469,61 @@ export function ProductForm({ productId }: Props) {
         </CardContent>
       </Card>
 
+      {/* Custom fields */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Champs personnalisés</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="category">Couleur</Label>
+              <select
+                id="color"
+                name="color"
+                value="Rouge"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="Rouge">Rouge</option>
+                <option value="Bleu">Bleu</option>
+                <option value="Vert">Vert</option>
+                <option value="Jaune">Jaune</option>
+                <option value="Orange">Orange</option>
+                <option value="Violet">Violet</option>
+                <option value="Rose">Rose</option>
+                <option value="Noir">Noir</option>
+                <option value="Blanc">Blanc</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="condition">Taille</Label>
+              <select
+                id="condition"
+                name="condition"
+                value="M"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="price">Référence</Label>
+                <InputGroup>
+                  <InputGroupInput placeholder="Référence" name="reference" value={"REF-0000000000"} />
+                </InputGroup>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Actions */}
       <div className="flex gap-4">
         <Button type="submit" disabled={loading} className="flex-1">
