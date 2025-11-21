@@ -7,6 +7,13 @@ import { productService, categoryService, type ProductFormData, type Category } 
 import { authService, pb } from '@/lib/pocketbase';
 import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, FileText, Plus, Trash2 } from 'lucide-react';
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+import {
   fetchUserTemplates,
   getTemplateFields,
   copyTemplateFieldsToProduct,
@@ -320,7 +327,7 @@ export function ProductForm({ productId }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto">
+    <form onSubmit={handleSubmit} className="space-y-6 container mx-auto">
       {/* Message de retour */}
       {message.text && (
         <div className={`flex items-center gap-2 p-4 rounded-md ${
@@ -337,42 +344,6 @@ export function ProductForm({ productId }: Props) {
         </div>
       )}
 
-      {/* Sélecteur de template (uniquement en mode création) */}
-      {!productId && templates.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Utiliser un template
-            </CardTitle>
-            <CardDescription>
-              Gagnez du temps en utilisant un de vos templates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <select
-              value={selectedTemplateId}
-              onChange={(e) => setSelectedTemplateId(e.target.value)}
-              disabled={loadingTemplate}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Aucun template (création manuelle)</option>
-              {templates.map(template => (
-                <option key={template.id} value={template.id}>
-                  {template.title}
-                </option>
-              ))}
-            </select>
-            {loadingTemplate && (
-              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Chargement du template...
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Informations principales */}
       <Card>
         <CardHeader>
@@ -380,6 +351,8 @@ export function ProductForm({ productId }: Props) {
           <CardDescription>Décrivez votre produit en détail</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+
+          <UploadImages />
           <div className="space-y-2">
             <Label htmlFor="title">Titre de l'annonce *</Label>
             <Input
@@ -706,3 +679,140 @@ export function ProductForm({ productId }: Props) {
   );
 }
 
+function UploadImages() {
+  type Image = {
+    id: string;
+    file: File;
+    preview: string;
+  }
+
+  const maxImages = 10;
+  const [images, setImages] = useState<Image[]>([]);
+
+  function addImage(file: File) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImages(prev => [...prev, { 
+        id: `${file.name}-${Date.now()}`, 
+        file: file, 
+        preview: reader.result as string 
+      }]);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage(index: number) {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    
+    if (images.length + files.length > maxImages) {
+      alert(`Maximum ${maxImages} images autorisées`);
+      return;
+    }
+    
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        addImage(file);
+      }
+    });
+    
+    // Reset input pour permettre de sélectionner le même fichier
+    e.target.value = '';
+  }
+
+  const remainingSlots = maxImages - images.length;
+
+  return (
+    <div className="w-full space-y-4">
+      {images.length === 0 ? (
+        // Affichage initial quand aucune image
+        <Card className="border-2 border-dashed">
+          <label 
+            htmlFor="image-input" 
+            className="flex flex-col items-center justify-center p-12 cursor-pointer hover:bg-accent/50 transition-colors"
+          >
+            <Upload className="h-12 w-12 mb-4 text-muted-foreground" />
+            <p className="text-lg font-medium mb-2">Ajouter des images</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Cliquez pour sélectionner jusqu'à {maxImages} images
+            </p>
+            <input 
+              id="image-input" 
+              type="file" 
+              accept="image/*" 
+              multiple 
+              onChange={handleImageChange} 
+              className="hidden" 
+            />
+          </label>
+        </Card>
+      ) : (
+        // Affichage avec images
+        <>
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              {images.length} / {maxImages} images
+            </p>
+            {remainingSlots > 0 && (
+              <Button 
+                type="button"
+                variant="outline" 
+                size="sm"
+                onClick={() => document.getElementById('image-input')?.click()}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter {remainingSlots > 1 ? `(${remainingSlots} restantes)` : ''}
+              </Button>
+            )}
+            <input 
+              id="image-input" 
+              type="file" 
+              accept="image/*" 
+              multiple 
+              onChange={handleImageChange} 
+              className="hidden" 
+            />
+          </div>
+
+          <Carousel className="w-full">
+            <CarouselContent>
+              {images.map((image, index) => (
+                <CarouselItem key={image.id} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="p-1">
+                    <Card className="relative overflow-hidden group">
+                      <div className="aspect-square relative">
+                        <img 
+                          src={image.preview} 
+                          alt={`Image ${index + 1}`}
+                          className="w-full h-full object-cover" 
+                        />
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeImage(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Card>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {images.length > 1 && (
+              <>
+                <CarouselPrevious type="button" />
+                <CarouselNext type="button" />
+              </>
+            )}
+          </Carousel>
+        </>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,14 @@
+---
+import Seller from '@/layouts/dashboard/seller.astro';
+import { ProductListingOnline } from '@/components/ProductListingOnline';
+import { Button } from '@/components/ui/button';
+import { ProductForm } from '@/components/ProductForm';
+const template = {
+  title: "Ajouter un produit - Dashboard - Open Market",
+};
+---
+
+<Seller title={template.title} pageTitle="Ajouter un produit">
+  <ProductForm client:load />
+</Seller>
+
