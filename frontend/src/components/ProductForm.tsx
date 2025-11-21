@@ -24,6 +24,7 @@ import {
   type ProductField,
   type Field,
 } from '@/lib/templates';
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from './ui/input-group';
 
 interface Props {
   productId?: string;
@@ -344,189 +345,8 @@ export function ProductForm({ productId }: Props) {
         </div>
       )}
 
-      {/* Informations principales */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Informations principales</CardTitle>
-          <CardDescription>Décrivez votre produit en détail</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-
-          <UploadImages />
-          <div className="space-y-2">
-            <Label htmlFor="title">Titre de l'annonce *</Label>
-            <Input
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              placeholder="Ex: Moteur essence 1.6L pour Renault Clio"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              rows={6}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Décrivez en détail l'état, les caractéristiques et tout autre information importante..."
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="reference">Référence produit</Label>
-              <Input
-                id="reference"
-                name="reference"
-                value={formData.reference}
-                onChange={handleChange}
-                disabled={loading}
-                placeholder="Ex: REF-12345"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="compatibility">Compatibilité</Label>
-              <Input
-                id="compatibility"
-                name="compatibility"
-                value={formData.compatibility}
-                onChange={handleChange}
-                disabled={loading}
-                placeholder="Ex: Renault Clio 2, 3, 4"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Catégorie et état */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Catégorie et état</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Catégorie *</Label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="condition">État *</Label>
-              <select
-                id="condition"
-                name="condition"
-                value={formData.condition}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="Neuf">Neuf</option>
-                <option value="Occasion">Occasion</option>
-                <option value="Reconditionné">Reconditionné</option>
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Prix et localisation */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Prix et localisation</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="price">Prix *</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="currency">Devise *</Label>
-              <select
-                id="currency"
-                name="currency"
-                value={formData.currency}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="EUR">EUR (€)</option>
-                <option value="USD">USD ($)</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="location">Localisation *</Label>
-            <Input
-              id="location"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              placeholder="Ex: Paris, France"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Statut *</Label>
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="Disponible">Disponible</option>
-              <option value="Réservé">Réservé</option>
-              <option value="Vendu">Vendu</option>
-              <option value="Brouillon">Brouillon</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Images */}
-      <Card>
+{/* Images */}
+<Card>
         <CardHeader>
           <CardTitle>Images</CardTitle>
           <CardDescription>
@@ -589,75 +409,99 @@ export function ProductForm({ productId }: Props) {
         </CardContent>
       </Card>
 
-      {/* Champs personnalisés */}
-      {!productId && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Champs personnalisés</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddCustomField}
-                disabled={availableFields.length === customFields.length}
+      {/* Informations principales */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informations principales</CardTitle>
+          <CardDescription>Décrivez votre produit en détail</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description *</Label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              disabled={loading}
+              rows={6}
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="Décrivez en détail l'état, les caractéristiques et tout autre information importante..."
+            />
+          </div>
+
+        </CardContent>
+      </Card>
+
+      {/* Catégorie et état */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Catégorie et état</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="category">Catégorie *</Label>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Ajouter un champ
-              </Button>
-            </CardTitle>
-            <CardDescription>
-              Ajoutez des champs supplémentaires à votre produit
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {customFields.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Aucun champ personnalisé. Cliquez sur "Ajouter un champ" pour en créer.
-              </p>
-            ) : (
-              customFields.map((field, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
-                  <div className="flex-1 space-y-2">
-                    <select
-                      value={field.fieldId}
-                      onChange={(e) => handleChangeCustomFieldId(index, e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
-                    >
-                      {availableFields.map(af => (
-                        <option key={af.id} value={af.id}>{af.label}</option>
-                      ))}
-                    </select>
-                    <Input
-                      value={field.value}
-                      onChange={(e) => handleUpdateCustomFieldValue(index, e.target.value)}
-                      placeholder="Valeur"
-                      maxLength={500}
-                    />
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={field.isVisible}
-                        onChange={(e) => handleUpdateCustomFieldVisibility(index, e.target.checked)}
-                        className="w-4 h-4"
-                      />
-                      Visible aux clients
-                    </label>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveCustomField(index)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      )}
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="condition">État *</Label>
+              <select
+                id="condition"
+                name="condition"
+                value={formData.condition}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="Neuf">Neuf</option>
+                <option value="Occasion">Occasion</option>
+                <option value="Reconditionné">Reconditionné</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Prix */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Prix</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="price">Prix *</Label>
+              <InputGroup>
+                <InputGroupAddon>
+                  <InputGroupText>€</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput placeholder="0.00" name="price" value={formData.price} onChange={handleChange} required disabled={loading} />
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>EUR</InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
+            </div>
+          </div>
+
+        </CardContent>
+      </Card>
 
       {/* Actions */}
       <div className="flex gap-4">
@@ -676,143 +520,5 @@ export function ProductForm({ productId }: Props) {
         </Button>
       </div>
     </form>
-  );
-}
-
-function UploadImages() {
-  type Image = {
-    id: string;
-    file: File;
-    preview: string;
-  }
-
-  const maxImages = 10;
-  const [images, setImages] = useState<Image[]>([]);
-
-  function addImage(file: File) {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImages(prev => [...prev, { 
-        id: `${file.name}-${Date.now()}`, 
-        file: file, 
-        preview: reader.result as string 
-      }]);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function removeImage(index: number) {
-    setImages(prev => prev.filter((_, i) => i !== index));
-  }
-
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []);
-    
-    if (images.length + files.length > maxImages) {
-      alert(`Maximum ${maxImages} images autorisées`);
-      return;
-    }
-    
-    files.forEach(file => {
-      if (file.type.startsWith('image/')) {
-        addImage(file);
-      }
-    });
-    
-    // Reset input pour permettre de sélectionner le même fichier
-    e.target.value = '';
-  }
-
-  const remainingSlots = maxImages - images.length;
-
-  return (
-    <div className="w-full space-y-4">
-      {images.length === 0 ? (
-        // Affichage initial quand aucune image
-        <Card className="border-2 border-dashed">
-          <label 
-            htmlFor="image-input" 
-            className="flex flex-col items-center justify-center p-12 cursor-pointer hover:bg-accent/50 transition-colors"
-          >
-            <Upload className="h-12 w-12 mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">Ajouter des images</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Cliquez pour sélectionner jusqu'à {maxImages} images
-            </p>
-            <input 
-              id="image-input" 
-              type="file" 
-              accept="image/*" 
-              multiple 
-              onChange={handleImageChange} 
-              className="hidden" 
-            />
-          </label>
-        </Card>
-      ) : (
-        // Affichage avec images
-        <>
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">
-              {images.length} / {maxImages} images
-            </p>
-            {remainingSlots > 0 && (
-              <Button 
-                type="button"
-                variant="outline" 
-                size="sm"
-                onClick={() => document.getElementById('image-input')?.click()}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter {remainingSlots > 1 ? `(${remainingSlots} restantes)` : ''}
-              </Button>
-            )}
-            <input 
-              id="image-input" 
-              type="file" 
-              accept="image/*" 
-              multiple 
-              onChange={handleImageChange} 
-              className="hidden" 
-            />
-          </div>
-
-          <Carousel className="w-full">
-            <CarouselContent>
-              {images.map((image, index) => (
-                <CarouselItem key={image.id} className="md:basis-1/2 lg:basis-1/3">
-                  <div className="p-1">
-                    <Card className="relative overflow-hidden group">
-                      <div className="aspect-square relative">
-                        <img 
-                          src={image.preview} 
-                          alt={`Image ${index + 1}`}
-                          className="w-full h-full object-cover" 
-                        />
-                        <Button 
-                          type="button" 
-                          variant="destructive" 
-                          size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeImage(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </Card>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            {images.length > 1 && (
-              <>
-                <CarouselPrevious type="button" />
-                <CarouselNext type="button" />
-              </>
-            )}
-          </Carousel>
-        </>
-      )}
-    </div>
   );
 }
