@@ -28,14 +28,18 @@ const fieldTypes = [
     },
 ]
 
-export function CustomFieldDialog() {
+export function CustomFieldDialog({ isDialogOpen, setIsDialogOpen }: { isDialogOpen: boolean, setIsDialogOpen: (open: boolean) => void }) {
 
 
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [fieldName, setFieldName] = useState('');
     const [fieldType, setFieldType] = useState<FieldType>(FieldType.TEXT);
     const [fieldValue, setFieldValue] = useState('');
     const [options, setOptions] = useState<string[]>([]);
+
+
+    function handleAddField() {
+        console.log('Ajouter le champ');
+    }
 
   return (
 

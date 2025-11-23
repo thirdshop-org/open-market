@@ -8,9 +8,7 @@ import { authService, pb } from '@/lib/pocketbase';
 import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, FileText, Plus, Trash2, Badge as BadgeIcon, ListPlus, Type, List, Check } from 'lucide-react';
 import { Badge } from "@/components/ui/badge"
 import { FieldType } from "@/lib/fields";
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { CustomFieldDialog } from '@/components/CustomFieldDialog';
 
 import {
   fetchUserTemplates,
@@ -659,6 +657,8 @@ export function ProductForm({ productId }: Props) {
           )}
         </CardContent>
       </Card>
+
+      <CustomFieldDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
 
       {/* Actions */}
       <div className="flex gap-4">
