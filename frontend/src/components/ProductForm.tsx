@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { productService, categoryService, type ProductFormData, type Category } from '@/lib/products';
+import { productService, categoryService, type ProductFormData, type Category, type Product } from '@/lib/products';
 import { authService, pb } from '@/lib/pocketbase';
 import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, FileText, Plus, Trash2, Badge as BadgeIcon, ListPlus, Type, List, Check } from 'lucide-react';
 import { Badge } from "@/components/ui/badge"
@@ -20,106 +20,41 @@ import {
   type Template,
   type ProductField,
   type Field,
+  getTemplateById,
+  getDefaultTemplate,
 } from '@/lib/templates';
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from './ui/input-group';
 
 interface Props {
   productId?: string;
+  templateId?: string;
 }
 
 
-export function ProductForm({ productId }: Props) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedField, setSelectedField] = useState<Field | null>(null);
+export function ProductForm({ productId, templateId }: Props) {
+  const [isDialogOpen, setIsDialogOpen] = useState<null | Field>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [fieldName, setFieldName] = useState('');
   const [fieldValue, setFieldValue] = useState('');
   const [fieldType, setFieldType] = useState<FieldType>(FieldType.TEXT);
-  const [fieldOptions, setFieldOptions] = useState<string[]>([]);
   const [fieldRequired, setFieldRequired] = useState(false);
   const [fieldVisible, setFieldVisible] = useState(true);
-  const [fieldDescription, setFieldDescription] = useState('');
-  const [fieldPlaceholder, setFieldPlaceholder] = useState('');
-  const [fieldDefaultValue, setFieldDefaultValue] = useState('');
 
-  function handleOpenFieldDialog() {
-    setIsDialogOpen(true);
-  }
+  function handleOpenFieldDialog( field?: Field ) {
 
-  async function handleAddField() {
-    // Validation
-    if (!fieldName.trim()) {
-      setMessage({ type: 'error', text: 'Le nom du champ est requis' });
-      return;
+    const defaultField: Field = {
+      id: '',
+      label: 'Nouveau champ',
+      fieldType: FieldType.TEXT,
+      isDefault: false,
+      createdByAdmin: false,
+      userId: pb.authStore.model?.id || '',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
     }
 
-    if (fieldType === FieldType.SELECT && options.length === 0) {
-      setMessage({ type: 'error', text: 'Ajoutez au moins une option pour la liste déroulante' });
-      return;
-    }
+    setIsDialogOpen(field ?? defaultField);
 
-    if (fieldType === FieldType.SELECT && options.some(opt => !opt.trim())) {
-      setMessage({ type: 'error', text: 'Toutes les options doivent avoir une valeur' });
-      return;
-    }
-
-    try {
-      const currentUser = pb.authStore.model;
-      if (!currentUser) {
-        setMessage({ type: 'error', text: 'Vous devez être connecté' });
-        return;
-      }
-
-      // Créer le champ dans la base de données
-      const newFieldRecord = await pb.collection('fields').create({
-        label: fieldName,
-        fieldType: fieldType,
-        userId: currentUser.id,
-        isDefault: false,
-        createdByAdmin: false,
-      });
-
-      // Convertir en type Field
-      const newField: Field = {
-        id: newFieldRecord.id,
-        label: newFieldRecord.label,
-        fieldType: newFieldRecord.fieldType,
-        userId: newFieldRecord.userId,
-        isDefault: false,
-        createdByAdmin: false,
-        created: newFieldRecord.created,
-        updated: newFieldRecord.updated,
-      };
-
-      // Ajouter le champ à la liste des champs disponibles
-      setAvailableFields([...availableFields, newField]);
-
-      // Ajouter le champ aux champs personnalisés du formulaire
-      setCustomFields([...customFields, {
-        fieldId: newField.id,
-        label: newField.label,
-        value: fieldType === FieldType.TEXT ? fieldValue : '',
-        isVisible: fieldVisible,
-      }]);
-
-      // Réinitialiser le formulaire
-      setFieldName('');
-      setFieldValue('');
-      setFieldType(FieldType.TEXT);
-      setOptions([]);
-      setFieldRequired(false);
-      setFieldVisible(true);
-      setFieldDescription('');
-      setFieldPlaceholder('');
-      setFieldDefaultValue('');
-      
-      // Fermer le dialog
-      setIsDialogOpen(false);
-      setMessage({ type: 'success', text: 'Champ personnalisé ajouté avec succès' });
-    } catch (error: any) {
-      console.error('Error creating field:', error);
-      setMessage({ type: 'error', text: 'Erreur lors de la création du champ' });
-    }
   }
 
   const [formData, setFormData] = useState<ProductFormData>({
@@ -149,20 +84,57 @@ export function ProductForm({ productId }: Props) {
   const [availableFields, setAvailableFields] = useState<Field[]>([]);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
 
-  useEffect(() => {
-    loadCategories();
-    loadTemplatesAndFields();
-    if (productId) {
-      loadProduct();
+  // Template
+  const [template, setTemplate] = useState<Product | null>(null);
+
+  // Product
+  const [product, setProduct] = useState<Product | null>(null);
+
+
+  async function loadTemplate() {
+
+    if ( templateId ) {
+      const template = await productService.getById(templateId);
+      setTemplate(template);
     } else {
-      // Vérifier si un template est passé en paramètre d'URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const templateParam = urlParams.get('template');
-      if (templateParam) {
-        setSelectedTemplateId(templateParam);
-      }
+      const template = await productService.getDefault();
+      setTemplate(template);
     }
-  }, [productId]);
+
+  }
+
+  async function loadProduct() {
+    if ( productId ) {
+      const product = await productService.getById(productId);
+      setFormData(product);
+    } else {
+      const product = await productService.create(formData, images);
+      setFormData(product);
+    }
+  }
+
+  async function init() {
+
+    setLoadingData(true);
+
+    await Promise.all([
+      loadTemplate(),
+      loadProduct(),
+    ]);
+
+    if ( template?.id !== product?.parentId ) {
+      setMessage({ type: 'error', text: 'Le template et le produit ne correspondent pas' });
+      return;
+    }
+    
+    setLoadingData(false);
+  }
+
+  useEffect(() => {
+
+    init();
+
+  }, [productId, templateId]);
 
   useEffect(() => {
     if (selectedTemplateId && !productId) {
@@ -582,36 +554,7 @@ export function ProductForm({ productId }: Props) {
         <CardContent className="space-y-4">
           {customFields.length === 0 ? (
             // État vide avec guide
-            <div className="text-center py-8 space-y-4">
-              <div className="inline-flex p-4 rounded-full bg-primary/10">
-                <ListPlus className="w-8 h-8 text-primary" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-medium">Personnalisez votre annonce</h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Ajoutez des informations spécifiques comme la couleur, taille, référence...
-                  pour aider les acheteurs à trouver exactement ce qu'ils cherchent.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
-                  + Couleur
-                </Badge>
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
-                  + Taille
-                </Badge>
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
-                  + Référence
-                </Badge>
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
-                  + Marque
-                </Badge>
-              </div>
-              <Button type="button" onClick={handleOpenFieldDialog} className='cursor-pointer' >
-                <Plus className="w-4 h-4 mr-2" />
-                Créer un champ personnalisé
-              </Button>
-            </div>
+            <CustomFieldCard handleOpenFieldDialog={handleOpenFieldDialog} />
           ) : (
             // Liste des champs + bouton d'ajout
             <>
@@ -658,7 +601,7 @@ export function ProductForm({ productId }: Props) {
         </CardContent>
       </Card>
 
-      <CustomFieldDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
+      <CustomFieldDialog isDialogOpen={isDialogOpen !== null} setIsDialogOpen={setIsDialogOpen} field={isDialogOpen} />
 
       {/* Actions */}
       <div className="flex gap-4">
@@ -678,4 +621,82 @@ export function ProductForm({ productId }: Props) {
       </div>
     </form>
   );
+}
+
+
+
+function CustomFieldCard({ handleOpenFieldDialog }: { handleOpenFieldDialog: () => void }) {
+
+  const customFieldsExamples: Field[] = [
+    {
+      id: '',
+      label: 'Couleur',
+      options:[],
+      fieldType: FieldType.SELECT,
+      isDefault: false,
+      createdByAdmin: false,
+      userId: pb.authStore.model?.id || '',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    },
+    {
+      id: '',
+      label: 'Taille',
+      options:[],
+      fieldType: FieldType.SELECT,
+      isDefault: false,
+      createdByAdmin: false,
+      userId: pb.authStore.model?.id || '',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    },
+    {
+      id: '',
+      label: 'Référence',
+      options:[],
+      fieldType: FieldType.TEXT,
+      isDefault: false,
+      createdByAdmin: false,
+      userId: pb.authStore.model?.id || '',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    },
+    {
+      id: '',
+      label: 'Marque',
+      options:[],
+      fieldType: FieldType.SELECT,
+      isDefault: false,
+      createdByAdmin: false,
+      userId: pb.authStore.model?.id || '',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    },
+  ]
+
+  return (
+    <div className="text-center py-8 space-y-4">
+      <div className="inline-flex p-4 rounded-full bg-primary/10">
+        <ListPlus className="w-8 h-8 text-primary" />
+      </div>
+      <div className="space-y-2">
+        <h3 className="font-medium">Personnalisez votre annonce</h3>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          Ajoutez des informations spécifiques comme la couleur, taille, référence...
+          pour aider les acheteurs à trouver exactement ce qu'ils cherchent.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2 justify-center">
+        {customFieldsExamples.map((field) => (
+          <Badge variant="outline" className="cursor-pointer hover:bg-accent" onClick={() => handleOpenFieldDialog(field)} type="button">
+            + {field.label}
+          </Badge>
+        ))}
+      </div>
+      <Button type="button" onClick={() => handleOpenFieldDialog()} className='cursor-pointer' >
+        <Plus className="w-4 h-4 mr-2" />
+        Créer un champ personnalisé
+      </Button>
+    </div>
+  )
 }

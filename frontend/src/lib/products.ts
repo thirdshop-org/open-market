@@ -10,6 +10,19 @@ export interface Category {
   updated: string;
 }
 
+export enum ProductCondition {
+  NEW = 'Neuf',
+  USED = 'Occasion',
+  RECONDITIONED = 'Reconditionné',
+}
+
+export enum ProductStatus {
+  AVAILABLE = 'Disponible',
+  SOLD = 'Vendu',
+  RESERVED = 'Réservé',
+  DRAFT = 'Brouillon',
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -18,9 +31,10 @@ export interface Product {
   currency: string;
   images: string[];
   category: string;
-  condition: 'Neuf' | 'Occasion' | 'Reconditionné';
+  condition: ProductCondition;
+  parentId?: string;
   seller: string;
-  status: 'Disponible' | 'Vendu' | 'Réservé' | 'Brouillon';
+  status: ProductStatus;
   location: string;
   views: number;
   reference?: string;
@@ -43,8 +57,8 @@ export interface ProductFormData {
   price: number;
   currency: string;
   category: string;
-  condition: 'Neuf' | 'Occasion' | 'Reconditionné';
-  status: 'Disponible' | 'Vendu' | 'Réservé' | 'Brouillon';
+  condition: ProductCondition;
+  status: ProductStatus;
   location: string;
   reference?: string;
   compatibility?: string;
@@ -85,6 +99,16 @@ export const productService = {
       return product;
     } catch (error) {
       console.error('Error fetching product:', error);
+      throw error;
+    }
+  },
+
+  async getDefault() {
+    try {
+      // Where parentId is null
+      return await pb.collection('products').getFirstListItem<Product>('parentId = null');
+    } catch (error) {
+      console.error('Error fetching default product:', error);
       throw error;
     }
   },

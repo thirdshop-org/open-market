@@ -12,6 +12,8 @@ import { Plus } from "lucide-react";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { FieldType } from "@/lib/fields";
+import type { Field } from "@/lib/templates";
+import pb from "@/lib/pocketbase";
 
 const fieldTypes = [
     {
@@ -28,86 +30,98 @@ const fieldTypes = [
     },
 ]
 
-export function CustomFieldDialog({ isDialogOpen, setIsDialogOpen }: { isDialogOpen: boolean, setIsDialogOpen: (open: boolean) => void }) {
+export function CustomFieldDialog({ isDialogOpen, setIsDialogOpen, field }: { isDialogOpen: boolean, setIsDialogOpen: (open: boolean) => void, field?: Field }) {
 
 
-    const [fieldName, setFieldName] = useState('');
-    const [fieldType, setFieldType] = useState<FieldType>(FieldType.TEXT);
-    const [fieldValue, setFieldValue] = useState('');
-    const [options, setOptions] = useState<string[]>([]);
+    const defaultField: Field = {
+        id: '',
+        label: 'Nouveau champ',
+        fieldType: FieldType.TEXT,
+        isDefault: false,
+        options: [],
+        createdByAdmin: false,
+        userId: pb.authStore.model?.id || '',
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+    }
 
+    const [customField, setCustomField] = useState<Field>(field ?? defaultField);
+
+    const [fieldType, setFieldType] = useState<FieldType>(customField.fieldType ?? FieldType.TEXT);
 
     function handleAddField() {
         console.log('Ajouter le champ');
+
     }
 
   return (
 
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
 
-    <DialogContent className="sm:max-w-[500px]">
-      <DialogHeader>
-        <DialogTitle>Nouveau champ personnalisé</DialogTitle>
-        <DialogDescription>
-          Ajoutez une information spécifique à votre article
-        </DialogDescription>
-      </DialogHeader>
+        <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+            <DialogTitle>Nouveau champ personnalisé</DialogTitle>
+            <DialogDescription>
+            Ajoutez une information spécifique à votre article
+            </DialogDescription>
+        </DialogHeader>
 
-      <div className="space-y-4 py-4">
-        {/* Étape 1 : Nom du champ */}
-        <div className="space-y-2">
-          <Label htmlFor="field-name">
-            Nom du champ <span className="text-destructive">*</span>
-          </Label>
-          <Input 
-            id="field-name"
-            placeholder="ex: Couleur" 
-            value={fieldName}
-            onChange={(e) => setFieldName(e.target.value)}
-          />
+        <div className="space-y-4 py-4">
+            {/* Étape 1 : Nom du champ */}
+            <div className="space-y-2">
+            <Label htmlFor="field-name">
+                Nom du champ <span className="text-destructive">*</span>
+            </Label>
+            <Input 
+                id="field-name"
+                placeholder="ex: Couleur" 
+                value={customField.label}
+                onChange={(e) => setCustomField({ ...customField, label: e.target.value })}
+            />
+            </div>
+
+            {/* Étape 2 : Type de champ */}
+            <div className="space-y-2">
+            <Label>Type de champ</Label>
+            <RadioGroup value={customField.fieldType} onValueChange={(fieldType: FieldType) => setCustomField({ ...customField, fieldType: fieldType })}>
+                {fieldTypes.map((type) => (
+                    <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value={type.value} id={type.value} />
+                    <Label htmlFor={type.value} className="flex-1 cursor-pointer">
+                        <div className="flex items-center gap-2">
+                        <type.icon className="w-4 h-4" />
+                        <div>
+                            <p className="font-medium">{type.label}</p>
+                            <p className="text-xs text-muted-foreground">{type.description}</p>
+                        </div>
+                        </div>
+                    </Label>
+                    </div>
+                ))}
+            </RadioGroup>
+            </div>
+
+            {/* Étape 3 : Valeur ou Options */}
+            {fieldType === FieldType.TEXT ? (
+                <TextField fieldValue={fieldValue} setFieldValue={setFieldValue} />
+            ) : (
+                <SelectField options={customField.options} setOptions={setCustomField({ ...customField, options: options })} />
+            )}
+
         </div>
 
-        {/* Étape 2 : Type de champ */}
-        <div className="space-y-2">
-          <Label>Type de champ</Label>
-          <RadioGroup value={fieldType} onValueChange={(fieldType: FieldType) => setFieldType(fieldType)}>
-            {fieldTypes.map((type) => (
-                <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:bg-accent">
-                <RadioGroupItem value={type.value} id={type.value} />
-                <Label htmlFor={type.value} className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2">
-                    <type.icon className="w-4 h-4" />
-                    <div>
-                        <p className="font-medium">{type.label}</p>
-                        <p className="text-xs text-muted-foreground">{type.description}</p>
-                    </div>
-                    </div>
-                </Label>
-                </div>
-            ))}
-          </RadioGroup>
-        </div>
+        <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+            Annuler
+            </Button>
+            <Button type="button" onClick={handleAddField}>
+            <Check className="w-4 h-4 mr-2" />
+            Ajouter le champ
+            </Button>
+        </DialogFooter>
+        </DialogContent>
 
-        {/* Étape 3 : Valeur ou Options */}
-        {fieldType === FieldType.TEXT ? (
-          <TextField fieldValue={fieldValue} setFieldValue={setFieldValue} />
-        ) : (
-          <SelectField options={options} setOptions={setOptions} />
-        )}
-
-      </div>
-
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-          Annuler
-        </Button>
-        <Button type="button" onClick={handleAddField}>
-          <Check className="w-4 h-4 mr-2" />
-          Ajouter le champ
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+    </Dialog>
   );
 }
 
