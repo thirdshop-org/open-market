@@ -85,7 +85,7 @@ export function CustomFieldDialog() {
         </div>
 
         {/* Étape 3 : Valeur ou Options */}
-        {fieldType === 'text' ? (
+        {fieldType === FieldType.TEXT ? (
           <TextField fieldValue={fieldValue} setFieldValue={setFieldValue} />
         ) : (
           <SelectField options={options} setOptions={setOptions} />
