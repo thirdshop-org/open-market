@@ -607,7 +607,7 @@ export function ProductForm({ productId }: Props) {
                   + Marque
                 </Badge>
               </div>
-              <Button type="button" onClick={handleOpenFieldDialog}>
+              <Button type="button" onClick={handleOpenFieldDialog} className='cursor-pointer' >
                 <Plus className="w-4 h-4 mr-2" />
                 Créer un champ personnalisé
               </Button>
