@@ -47,8 +47,84 @@ export function ProductForm({ productId }: Props) {
   const [fieldPlaceholder, setFieldPlaceholder] = useState('');
   const [fieldDefaultValue, setFieldDefaultValue] = useState('');
 
-  function handleAddField() {
+  function handleOpenFieldDialog() {
     setIsDialogOpen(true);
+  }
+
+  async function handleAddField() {
+    // Validation
+    if (!fieldName.trim()) {
+      setMessage({ type: 'error', text: 'Le nom du champ est requis' });
+      return;
+    }
+
+    if (fieldType === FieldType.SELECT && options.length === 0) {
+      setMessage({ type: 'error', text: 'Ajoutez au moins une option pour la liste déroulante' });
+      return;
+    }
+
+    if (fieldType === FieldType.SELECT && options.some(opt => !opt.trim())) {
+      setMessage({ type: 'error', text: 'Toutes les options doivent avoir une valeur' });
+      return;
+    }
+
+    try {
+      const currentUser = pb.authStore.model;
+      if (!currentUser) {
+        setMessage({ type: 'error', text: 'Vous devez être connecté' });
+        return;
+      }
+
+      // Créer le champ dans la base de données
+      const newFieldRecord = await pb.collection('fields').create({
+        label: fieldName,
+        fieldType: fieldType,
+        userId: currentUser.id,
+        isDefault: false,
+        createdByAdmin: false,
+      });
+
+      // Convertir en type Field
+      const newField: Field = {
+        id: newFieldRecord.id,
+        label: newFieldRecord.label,
+        fieldType: newFieldRecord.fieldType,
+        userId: newFieldRecord.userId,
+        isDefault: false,
+        createdByAdmin: false,
+        created: newFieldRecord.created,
+        updated: newFieldRecord.updated,
+      };
+
+      // Ajouter le champ à la liste des champs disponibles
+      setAvailableFields([...availableFields, newField]);
+
+      // Ajouter le champ aux champs personnalisés du formulaire
+      setCustomFields([...customFields, {
+        fieldId: newField.id,
+        label: newField.label,
+        value: fieldType === FieldType.TEXT ? fieldValue : '',
+        isVisible: fieldVisible,
+      }]);
+
+      // Réinitialiser le formulaire
+      setFieldName('');
+      setFieldValue('');
+      setFieldType(FieldType.TEXT);
+      setOptions([]);
+      setFieldRequired(false);
+      setFieldVisible(true);
+      setFieldDescription('');
+      setFieldPlaceholder('');
+      setFieldDefaultValue('');
+      
+      // Fermer le dialog
+      setIsDialogOpen(false);
+      setMessage({ type: 'success', text: 'Champ personnalisé ajouté avec succès' });
+    } catch (error: any) {
+      console.error('Error creating field:', error);
+      setMessage({ type: 'error', text: 'Erreur lors de la création du champ' });
+    }
   }
 
   const [formData, setFormData] = useState<ProductFormData>({
@@ -347,6 +423,21 @@ export function ProductForm({ productId }: Props) {
     setCustomFields(updated);
   };
 
+  // Fonctions de gestion des options pour les champs de type "select"
+  const addOption = () => {
+    setOptions([...options, '']);
+  };
+
+  const removeOption = (index: number) => {
+    setOptions(options.filter((_, i) => i !== index));
+  };
+
+  const updateOption = (index: number, value: string) => {
+    const updated = [...options];
+    updated[index] = value;
+    setOptions(updated);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 container mx-auto">
       {/* Message de retour */}
@@ -521,7 +612,7 @@ export function ProductForm({ productId }: Props) {
                   + Marque
                 </Badge>
               </div>
-              <Button type="button" onClick={handleAddField}>
+              <Button type="button" onClick={handleOpenFieldDialog}>
                 <Plus className="w-4 h-4 mr-2" />
                 Créer un champ personnalisé
               </Button>
@@ -529,8 +620,39 @@ export function ProductForm({ productId }: Props) {
           ) : (
             // Liste des champs + bouton d'ajout
             <>
-              {customFields.map((field) => (
-                <CustomFieldRow key={field.id} field={field} />
+              {customFields.map((field, index) => (
+                <div key={field.fieldId} className="flex gap-2 items-start p-4 border rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor={`custom-field-${index}`}>{field.label}</Label>
+                    <Input
+                      id={`custom-field-${index}`}
+                      value={field.value}
+                      onChange={(e) => handleUpdateCustomFieldValue(index, e.target.value)}
+                      placeholder={`Entrez ${field.label.toLowerCase()}`}
+                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`visible-${index}`}
+                        checked={field.isVisible}
+                        onChange={(e) => handleUpdateCustomFieldVisibility(index, e.target.checked)}
+                        className="rounded"
+                      />
+                      <Label htmlFor={`visible-${index}`} className="text-sm text-muted-foreground cursor-pointer">
+                        Visible par les clients
+                      </Label>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveCustomField(index)}
+                    className="mt-8"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               ))}
               <Button variant="outline" className="w-full" onClick={handleAddCustomField} type="button">
                 <Plus className="w-4 h-4 mr-2" />
@@ -648,10 +770,10 @@ export function ProductForm({ productId }: Props) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleAddField}>
+            <Button type="button" onClick={handleAddField}>
               <Check className="w-4 h-4 mr-2" />
               Ajouter le champ
             </Button>
