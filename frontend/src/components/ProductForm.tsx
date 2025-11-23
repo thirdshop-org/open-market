@@ -28,13 +28,18 @@ interface Props {
   productId?: string;
 }
 
+enum FieldType {
+  TEXT = 'text',
+  SELECT = 'select',
+}
+
 export function ProductForm({ productId }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<Field | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [fieldName, setFieldName] = useState('');
   const [fieldValue, setFieldValue] = useState('');
-  const [fieldType, setFieldType] = useState<'text' | 'number' | 'date' | 'checkbox' | 'radio' | 'select' | 'textarea'>('text');
+  const [fieldType, setFieldType] = useState<FieldType>(FieldType.TEXT);
   const [fieldOptions, setFieldOptions] = useState<string[]>([]);
   const [fieldRequired, setFieldRequired] = useState(false);
   const [fieldVisible, setFieldVisible] = useState(true);
@@ -484,61 +489,6 @@ export function ProductForm({ productId }: Props) {
         </CardContent>
       </Card>
 
-      {/* Custom fields */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Champs personnalisés</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Couleur</Label>
-              <select
-                id="color"
-                name="color"
-                value="Rouge"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="Rouge">Rouge</option>
-                <option value="Bleu">Bleu</option>
-                <option value="Vert">Vert</option>
-                <option value="Jaune">Jaune</option>
-                <option value="Orange">Orange</option>
-                <option value="Violet">Violet</option>
-                <option value="Rose">Rose</option>
-                <option value="Noir">Noir</option>
-                <option value="Blanc">Blanc</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="condition">Taille</Label>
-              <select
-                id="condition"
-                name="condition"
-                value="M"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
-                <option value="XXL">XXL</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="price">Référence</Label>
-                <InputGroup>
-                  <InputGroupInput placeholder="Référence" name="reference" value={"REF-0000000000"} />
-                </InputGroup>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Champs personnalisés</CardTitle>
@@ -571,7 +521,7 @@ export function ProductForm({ productId }: Props) {
                   + Marque
                 </Badge>
               </div>
-              <Button type="button" onClick={handleAddCustomField}>
+              <Button type="button" onClick={handleAddField}>
                 <Plus className="w-4 h-4 mr-2" />
                 Créer un champ personnalisé
               </Button>
@@ -582,7 +532,7 @@ export function ProductForm({ productId }: Props) {
               {customFields.map((field) => (
                 <CustomFieldRow key={field.id} field={field} />
               ))}
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleAddCustomField} type="button">
                 <Plus className="w-4 h-4 mr-2" />
                 Ajouter un champ
               </Button>
@@ -592,13 +542,7 @@ export function ProductForm({ productId }: Props) {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="w-full">
-            <Plus className="w-4 h-4 mr-2" />
-            Créer un champ personnalisé
-          </Button>
-        </DialogTrigger>
-        
+
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Nouveau champ personnalisé</DialogTitle>
@@ -624,9 +568,9 @@ export function ProductForm({ productId }: Props) {
             {/* Étape 2 : Type de champ */}
             <div className="space-y-2">
               <Label>Type de champ</Label>
-              <RadioGroup value={fieldType} onValueChange={setFieldType}>
+              <RadioGroup value={fieldType} onValueChange={(e: FieldType) => setFieldType(e)}>
                 <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:bg-accent">
-                  <RadioGroupItem value="text" id="text" />
+                  <RadioGroupItem value={FieldType.TEXT} id="text" />
                   <Label htmlFor="text" className="flex-1 cursor-pointer">
                     <div className="flex items-center gap-2">
                       <Type className="w-4 h-4" />
@@ -641,7 +585,7 @@ export function ProductForm({ productId }: Props) {
                 </div>
 
                 <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:bg-accent">
-                  <RadioGroupItem value="select" id="select" />
+                  <RadioGroupItem value={FieldType.SELECT} id="select" />
                   <Label htmlFor="select" className="flex-1 cursor-pointer">
                     <div className="flex items-center gap-2">
                       <List className="w-4 h-4" />
@@ -691,6 +635,7 @@ export function ProductForm({ productId }: Props) {
                   <Button 
                     variant="outline" 
                     size="sm" 
+                    type="button"
                     className="w-full"
                     onClick={addOption}
                   >
