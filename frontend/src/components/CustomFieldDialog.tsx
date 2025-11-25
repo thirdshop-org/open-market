@@ -11,8 +11,8 @@ import { X } from "lucide-react";
 import { Plus } from "lucide-react";
 import { Check } from "lucide-react";
 import { useState } from "react";
-import { FieldType } from "@/lib/fields";
-import type { Field } from "@/lib/templates";
+import { FieldType,type ProductField } from "@/lib/fields";
+import type { Field } from "@/lib/fields";
 import pb from "@/lib/pocketbase";
 
 const fieldTypes = [
@@ -37,21 +37,19 @@ export function CustomFieldDialog({ isDialogOpen, setIsDialogOpen, field }: { is
         id: '',
         label: 'Nouveau champ',
         fieldType: FieldType.TEXT,
+        fieldValue: '',
         isDefault: false,
-        options: [],
         createdByAdmin: false,
-        userId: pb.authStore.model?.id || '',
+        fieldOptions: [],
+        isVisibleByClients: true,
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
     }
 
     const [customField, setCustomField] = useState<Field>(field ?? defaultField);
 
-    const [fieldType, setFieldType] = useState<FieldType>(customField.fieldType ?? FieldType.TEXT);
-
     function handleAddField() {
         console.log('Ajouter le champ');
-
     }
 
   return (
@@ -102,10 +100,10 @@ export function CustomFieldDialog({ isDialogOpen, setIsDialogOpen, field }: { is
             </div>
 
             {/* Étape 3 : Valeur ou Options */}
-            {fieldType === FieldType.TEXT ? (
-                <TextField fieldValue={fieldValue} setFieldValue={setFieldValue} />
+            {customField.fieldType === FieldType.TEXT ? (
+                <TextField fieldValue={customField.fieldValue} setFieldValue={(value) => setCustomField({ ...customField, fieldValue: value })} />
             ) : (
-                <SelectField options={customField.options} setOptions={setCustomField({ ...customField, options: options })} />
+                <SelectField options={customField.fieldOptions ?? []} setOptions={(options) => setCustomField({ ...customField, fieldOptions: options })} />
             )}
 
         </div>

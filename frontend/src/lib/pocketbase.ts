@@ -1,7 +1,7 @@
 import PocketBase from 'pocketbase';
 
 // Configuration de l'URL du backend PocketBase
-const PB_URL = import.meta.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080';
+const PB_URL = import.meta.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 
 // Instance unique de PocketBase
 export const pb = new PocketBase(PB_URL);

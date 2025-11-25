@@ -7,22 +7,10 @@ import { productService, categoryService, type ProductFormData, type Category, t
 import { authService, pb } from '@/lib/pocketbase';
 import { AlertCircle, Loader2, CheckCircle, Upload, X, Image as ImageIcon, FileText, Plus, Trash2, Badge as BadgeIcon, ListPlus, Type, List, Check } from 'lucide-react';
 import { Badge } from "@/components/ui/badge"
-import { FieldType } from "@/lib/fields";
+import { fieldService, FieldType } from "@/lib/fields";
 import { CustomFieldDialog } from '@/components/CustomFieldDialog';
 
-import {
-  fetchUserTemplates,
-  getTemplateFields,
-  copyTemplateFieldsToProduct,
-  attachFieldToProduct,
-  getProductFields,
-  fetchAllFieldsForUser,
-  type Template,
-  type ProductField,
-  type Field,
-  getTemplateById,
-  getDefaultTemplate,
-} from '@/lib/templates';
+import type { Field, ProductField } from '@/lib/fields';
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from './ui/input-group';
 
 interface Props {
@@ -34,11 +22,6 @@ interface Props {
 export function ProductForm({ productId, templateId }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState<null | Field>(null);
   const [options, setOptions] = useState<string[]>([]);
-  const [fieldName, setFieldName] = useState('');
-  const [fieldValue, setFieldValue] = useState('');
-  const [fieldType, setFieldType] = useState<FieldType>(FieldType.TEXT);
-  const [fieldRequired, setFieldRequired] = useState(false);
-  const [fieldVisible, setFieldVisible] = useState(true);
 
   function handleOpenFieldDialog( field?: Field ) {
 
@@ -78,8 +61,6 @@ export function ProductForm({ productId, templateId }: Props) {
   const [message, setMessage] = useState({ type: '', text: '' });
   
   // États pour les templates et champs personnalisés
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [customFields, setCustomFields] = useState<Array<{ fieldId: string; label: string; value: string; isVisible: boolean }>>([]);
   const [availableFields, setAvailableFields] = useState<Field[]>([]);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
@@ -87,8 +68,12 @@ export function ProductForm({ productId, templateId }: Props) {
   // Template
   const [template, setTemplate] = useState<Product | null>(null);
 
+  const [templateFields, setTemplateFields] = useState<Field[]>([]);
+
   // Product
   const [product, setProduct] = useState<Product | null>(null);
+
+  const [productFields, setProductFields] = useState<ProductField[]>([]);
 
 
   async function loadTemplate() {
@@ -113,6 +98,22 @@ export function ProductForm({ productId, templateId }: Props) {
     }
   }
 
+  async function loadProductFields() {
+
+    if ( !product?.id ) throw new Error('Product ID is required');
+
+    const productFields = await fieldService.getProductFields(product.id);
+    setProductFields(productFields.items);
+  }
+
+  async function loadTemplateFields() {
+
+    if ( !template?.id ) throw new Error('Template ID is required');
+
+    const productFields = await fieldService.getProductFields(template.id);
+    setTemplateFields(productFields.items);
+  }
+
   async function init() {
 
     setLoadingData(true);
@@ -126,7 +127,12 @@ export function ProductForm({ productId, templateId }: Props) {
       setMessage({ type: 'error', text: 'Le template et le produit ne correspondent pas' });
       return;
     }
-    
+
+    await Promise.all([
+      loadProductFields(),
+      loadTemplateFields(),
+    ]);
+
     setLoadingData(false);
   }
 
@@ -135,12 +141,6 @@ export function ProductForm({ productId, templateId }: Props) {
     init();
 
   }, [productId, templateId]);
-
-  useEffect(() => {
-    if (selectedTemplateId && !productId) {
-      loadTemplateData(selectedTemplateId);
-    }
-  }, [selectedTemplateId, productId]);
 
   const loadCategories = async () => {
     try {
@@ -151,100 +151,6 @@ export function ProductForm({ productId, templateId }: Props) {
       }
     } catch (error) {
       console.error('Error loading categories:', error);
-    }
-  };
-
-  const loadTemplatesAndFields = async () => {
-    try {
-      const currentUser = pb.authStore.model;
-      if (!currentUser) return;
-
-      const [userTemplates, fields] = await Promise.all([
-        fetchUserTemplates(currentUser.id),
-        fetchAllFieldsForUser(currentUser.id),
-      ]);
-
-      setTemplates(userTemplates);
-      setAvailableFields(fields);
-    } catch (error) {
-      console.error('Error loading templates and fields:', error);
-    }
-  };
-
-  const loadTemplateData = async (templateId: string) => {
-    setLoadingTemplate(true);
-    try {
-      const template = templates.find(t => t.id === templateId);
-      if (!template) return;
-
-      // Pré-remplir le formulaire avec les données du template
-      setFormData({
-        title: template.title,
-        description: template.description,
-        price: template.price,
-        currency: template.currency,
-        category: template.category,
-        condition: template.condition,
-        status: 'Disponible',
-        location: template.location,
-        reference: template.reference || '',
-        compatibility: template.compatibility || '',
-      });
-
-      // Charger les champs du template
-      const templateFields = await getTemplateFields(templateId);
-      const fieldsWithLabels = templateFields.map(tf => ({
-        fieldId: tf.fieldId,
-        label: tf.expand?.fieldId?.label || '',
-        value: tf.fieldValue,
-        isVisible: tf.isVisibleByClients,
-      }));
-      setCustomFields(fieldsWithLabels);
-
-      // Charger les images du template (preview uniquement)
-      if (template.images && template.images.length > 0) {
-        const previews = template.images.map(img =>
-          pb.files.getUrl(template, img, { thumb: '200x200' })
-        );
-        setImagePreviews(previews);
-      }
-    } catch (error) {
-      console.error('Error loading template data:', error);
-      setMessage({ type: 'error', text: 'Erreur lors du chargement du template' });
-    } finally {
-      setLoadingTemplate(false);
-    }
-  };
-
-  const loadProduct = async () => {
-    if (!productId) return;
-    
-    try {
-      const product = await productService.getById(productId);
-      setFormData({
-        title: product.title,
-        description: product.description,
-        price: product.price,
-        currency: product.currency,
-        category: product.category,
-        condition: product.condition,
-        status: product.status,
-        location: product.location,
-        reference: product.reference || '',
-        compatibility: product.compatibility || '',
-      });
-      
-      // Charger les previews des images existantes
-      if (product.images && product.images.length > 0) {
-        const previews = product.images.map(img => 
-          productService.getImageUrl(product, img)
-        );
-        setImagePreviews(previews);
-      }
-    } catch (error: any) {
-      setMessage({ type: 'error', text: 'Erreur lors du chargement du produit' });
-    } finally {
-      setLoadingData(false);
     }
   };
 

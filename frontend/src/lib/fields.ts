@@ -1,3 +1,5 @@
+import { pb } from "./pocketbase";
+
 export enum FieldType {
     TEXT = 'text',
     SELECT = 'select',
@@ -6,25 +8,31 @@ export enum FieldType {
 export interface Field {
     id: string;
     label: string;
+    productId: string;
     options?: string[];
-    fieldType?: string; // 'text' ou 'number'
-    parentId?: string;
+    fieldType?: FieldType;
+    fieldValue: string;
+    fieldOptions?: string[];
     isDefault: boolean;
     createdByAdmin: boolean;
-    userId?: string;
-    created: string;
-    updated: string;
-    expand?: {
-      parentId?: Field;
-    };
-  }
-
-export interface ProductField {
-    id: string;
-    productId: string;
-    fieldId: string;
-    fieldValue: string; // STRING ONLY
     isVisibleByClients: boolean;
     created: string;
     updated: string;
+}
+
+export const fieldService = {
+    async getProductFields(productId: string) {
+        return await pb.collection('fields').getList<Field>(1, 100, {
+            filter: `productId = "${productId}"`,
+        });
+    },
+    async createField(field: Field) {
+        return await pb.collection('fields').create(field);
+    },
+    async updateField(field: Field) {
+        return await pb.collection('fields').update(field.id, field);
+    },
+    async deleteField(fieldId: string) {
+        return await pb.collection('fields').delete(fieldId);
+    },
 }
