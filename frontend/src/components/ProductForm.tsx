@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Input } from './ui/input';
-import { Select } from './ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 
 type Product = {
@@ -21,6 +21,8 @@ type Field = {
   label: string;
   type: FieldType;
   isRequired: boolean; // Required if set to true or if the field is comming from a template
+  options?: string[];
+  defaultOption?: string;
   created: string;
   updated: string;
 }
@@ -94,7 +96,17 @@ export function ProductForm({ productId, templateId }) {
         isRequired: false,
         created: '2021-01-01',
         updated: '2021-01-01',
-      }
+      },
+      {
+        id: '3',
+        label: 'Couleur',
+        type: FieldType.SELECT,
+        options: ['Rouge', 'Vert', 'Bleu'],
+        defaultOption: 'Rouge',
+        isRequired: false,
+        created: '2021-01-01',
+        updated: '2021-01-01',
+      },
     ]
   }
 
@@ -111,13 +123,22 @@ export function ProductForm({ productId, templateId }) {
       },
       {
         id: '2',
-        images: ['image1.jpg', 'image2.jpg'],
+        images: ['https://picsum.photos/200', 'https://picsum.photos/200'],
         value: '',
         productId: productId,
         fieldId: '2',
         created: '2021-01-01',
         updated: '2021-01-01',
-      }
+      },
+      {
+        id: '3',
+        images: [],
+        value: 'Rouge',
+        productId: productId,
+        fieldId: '3',
+        created: '2021-01-01',
+        updated: '2021-01-01',
+      },
     ]
   }
 
@@ -179,12 +200,6 @@ export function ProductForm({ productId, templateId }) {
       <h1>Product Form</h1>
 
       <div>
-        <h2>Template</h2>
-        <pre>{JSON.stringify(template, null, 2)}</pre>
-
-      </div>
-
-      <div>
         <h2>Template Fields</h2>
         {templateFieldsExpanded.map(field => (
           <div key={field.id}>
@@ -206,17 +221,25 @@ function fieldToComponent(field: FieldExpandWithProductField): React.ReactNode {
   switch (field.type) {
     case FieldType.TEXT:
 
-      const productField = field.expand.productFields[0];
+      const textFieldValue = field.expand.productFields[0];
     
-      return <TextField field={field} value={productField.value} isRequired={field.isRequired} />;
+      return <TextField field={field} value={textFieldValue.value} isRequired={field.isRequired} />;
 
     case FieldType.NUMBER:
-      return <NumberField field={field} isRequired={field.isRequired} />;
+
+      const numberFieldValue = field.expand.productFields[0];
+
+      return <NumberField field={field} value={numberFieldValue.value} isRequired={field.isRequired} />;
     case FieldType.SELECT:
-      return <SelectField field={field} isRequired={field.isRequired} />;
+
+      const selectFieldValue = field.expand.productFields[0];
+
+      const options = field.options || [];
+
+      return <SelectField field={field} value={selectFieldValue.value} options={options} isRequired={field.isRequired} />;
     case FieldType.IMAGES:
 
-      const images = field.expand.productFields.map(productField => productField.images);
+      const images = field.expand.productFields.map(productField => productField.images).flat();
 
       return <ImagesField field={field} images={images} isRequired={field.isRequired} />;
     default:
@@ -255,24 +278,35 @@ function TextField({ field, value, isRequired }: { field: Field, value?: string,
 
 }
 
-function NumberField({ field, isRequired }: { field: Field, isRequired: boolean }) {
-  const [fieldValue, setFieldValue] = useState(0);
+function NumberField({ field, value, isRequired }: { field: Field, value?: number, isRequired: boolean }) {
+  const [fieldValue, setFieldValue] = useState(value || 0);
 
   return (
     <div>
       <Label>{field.label} <span className="text-destructive" hidden={!isRequired}>*</span> </Label>
-      <Input type="number" value={fieldValue} onChange={(e) => setFieldValue(e.target.value)} required={isRequired} />
+      <Input type="number" value={fieldValue} onChange={(e) => setFieldValue(Number(e.target.value))} required={isRequired} />
     </div>
-  )
+  ) 
 }
 
-function SelectField({ field, isRequired }: { field: Field, isRequired: boolean }) {
-  const [value, setValue] = useState('');
+function SelectField({ field, value, options, isRequired }: { field: Field, value?: string, options: string[], isRequired: boolean }) {
+  const [fieldValue, setFieldValue] = useState(value || field.defaultOption || '');
 
   return (
     <div>
       <Label>{field.label} <span className="text-destructive" hidden={!isRequired}>*</span> </Label>
-      <Select value={value} onValueChange={(value) => setValue(value)} required={isRequired} />
+      <Select value={fieldValue} onValueChange={(value) => setFieldValue(value)} required={isRequired} >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Select a value" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {options.map((option, index) => (
+              <SelectItem key={index} value={option}>{option}</SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </div>
   )
 }
