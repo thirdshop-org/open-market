@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
+import { Button } from '../../ui/button';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import {
   testProductService,
   type TestField,
   FieldType
-} from '../lib/test-product-service';
-import { StepIndicator } from './form/product/StepIndicator';
-import { RequiredInformationsForm } from './form/product/RequiredInformationsForm';
-import { CustomProductInformationsForm } from './form/product/CustomProductInformationsForm';
-import { StockConfigurationForm } from './form/product/StockConfigurationForm';
+} from '../../../lib/test-product-service';
+import { StepIndicator } from './StepIndicator';
+import { RequiredInformationsForm } from './RequiredInformationsForm';
+import { CustomProductInformationsForm } from './CustomProductInformationsForm';
+import { StockConfigurationForm } from './StockConfigurationForm';
 
 // Helper type for form state
 type FieldWithValues = TestField & {
@@ -31,12 +31,38 @@ type Variant = {
 export function ProductForm({ productId: initialProductId, templateId: propTemplateId }: { productId?: string, templateId?: string }) {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>(1);
+
+  // PRODUCT CONFIGURATION
   const [productId, setProductId] = useState<string | undefined>(initialProductId);
+  const [productFields, setProductFields] = useState<FieldWithValues[]>([]);
+
+  // TEMPLATE CONFIGURATION
   const [templateId, setTemplateId] = useState<string | undefined>(propTemplateId);
   const [fields, setFields] = useState<FieldWithValues[]>([]);
+
+  // STOCK CONFIGURATION
   const [stockMode, setStockMode] = useState<'global' | 'variants'>('global');
   const [variants, setVariants] = useState<Variant[]>([]);
   const [globalStock, setGlobalStock] = useState<number>(0);
+
+  async function loadTemplateFields(templateId: string) {
+    const templateFields = await testProductService.getProductFields(templateId);
+
+    return templateFields.map((tpf, index) => {
+      const fieldDef = tpf.expand?.fieldId;
+      if (!fieldDef) return null;
+      return fieldDef;
+    }).filter(Boolean) as FieldWithValues[];
+  }
+
+  async function loadTemplateProductFields(templateId: string) {
+    const templateProductFields = await testProductService.getProductFields(templateId)
+    return templateProductFields.map((tpf, index) => {
+      const fieldDef = tpf.expand?.fieldId;
+      if (!fieldDef) return null;
+      return fieldDef;
+    }).filter(Boolean) as FieldWithValues[];
+  }
 
   // Récupérer le templateId depuis l'URL au montage
   useEffect(() => {
