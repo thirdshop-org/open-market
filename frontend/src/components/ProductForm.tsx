@@ -46,7 +46,8 @@ export function ProductForm({ productId: initialProductId, templateId: propTempl
         setTemplateId(templateIdFromUrl);
       }
     }
-  }, [propTemplateId]);
+    init();
+  }, []);
 
   // Helper to get fields suitable for variants (e.g. Select fields)
   const variantFields = useMemo(() => fields.filter(f => f.type === FieldType.SELECT), [fields]);
@@ -175,13 +176,6 @@ export function ProductForm({ productId: initialProductId, templateId: propTempl
       console.error('Error loading product:', error);
     }
   }
-
-  useEffect(() => {
-    // Always run init, even if templateId is undefined (to trigger fallback)
-    if (templateId !== undefined) {
-      init();
-    }
-  }, [templateId]);
 
   const handleFieldChange = (fieldId: string, value: string | number | string[]) => {
     setFields(prev => prev.map(f => {
