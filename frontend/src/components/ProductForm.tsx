@@ -3,6 +3,7 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 import ImagesField from './form/ImagesField';
+import SelectField from './form/SelectField';
 
 type Product = {
   id: string;
@@ -237,7 +238,7 @@ function fieldToComponent(field: FieldExpandWithProductField): React.ReactNode {
 
       const options = field.options || [];
 
-      return <SelectField field={field} value={selectFieldValue.value} options={options} isRequired={field.isRequired} />;
+      return <SelectField label={field.label} value={selectFieldValue.value} options={options} isRequired={field.isRequired} defaultOption={field.defaultOption} />;
     case FieldType.IMAGES:
 
       const images = field.expand.productFields.map(productField => productField.images).flat();
@@ -270,28 +271,6 @@ function NumberField({ field, value, isRequired }: { field: Field, value?: numbe
     <div>
       <Label>{field.label} <span className="text-destructive" hidden={!isRequired}>*</span> </Label>
       <Input type="number" value={fieldValue} onChange={(e) => setFieldValue(Number(e.target.value))} required={isRequired} />
-    </div>
-  )
-}
-
-function SelectField({ field, value, options, isRequired }: { field: Field, value?: string, options: string[], isRequired: boolean }) {
-  const [fieldValue, setFieldValue] = useState(value || field.defaultOption || '');
-
-  return (
-    <div>
-      <Label>{field.label} <span className="text-destructive" hidden={!isRequired}>*</span> </Label>
-      <Select value={fieldValue} onValueChange={(value) => setFieldValue(value)} required={isRequired} >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Select a value" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {options.map((option, index) => (
-              <SelectItem key={index} value={option}>{option}</SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
     </div>
   )
 }
