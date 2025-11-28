@@ -26,7 +26,7 @@ export function StepIndicator({ currentStep }: StepIndicatorProps) {
   ];
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 flex flex-row gap-4">
       {steps.map((step, index) => (
         <div key={step.number}>
           <div className="flex items-center justify-between">
@@ -46,9 +46,6 @@ export function StepIndicator({ currentStep }: StepIndicatorProps) {
                   <p className="text-xs text-muted-foreground">{step.description}</p>
                 </div>
               </div>
-              {index < steps.length - 1 && (
-                <div className={`ml-4 mt-2 h-12 border-l-2 ${currentStep > step.number ? 'border-primary' : 'border-muted'}`}></div>
-              )}
             </div>
           </div>
         </div>

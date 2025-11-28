@@ -113,16 +113,18 @@ export function ProductForm({ productId: initialProductId, templateId: propTempl
         }
       }
 
-      // 2. Load Template Fields (Inherited)
+      setTemplateId(effectiveTemplateId);
+
+      // 2. Load Template Fields (Inherited) - avec leur config isRequired
       const templateProductFields = await testProductService.getProductFields(effectiveTemplateId);
 
       // Map them to our state format
-      const inheritedFields: FieldWithValues[] = templateProductFields.map((tpf, index) => {
+      const inheritedFields: FieldWithValues[] = templateProductFields.map((tpf) => {
         const fieldDef = tpf.expand?.fieldId;
         if (!fieldDef) return null;
 
-        // Marquer les 3 premiers champs comme obligatoires
-        const isRequired = index < 3;
+        // Récupérer isRequired depuis la config du template
+        const isRequired = tpf.isRequired || false;
 
         if ( fieldDef.options ) {
           try {
@@ -161,22 +163,77 @@ export function ProductForm({ productId: initialProductId, templateId: propTempl
       const productFields = await testProductService.getProductFields(id);
       const productStocks = await testProductService.getProductStocks(id);
 
-      // Charger les champs avec leurs valeurs
-      const loadedFields: FieldWithValues[] = productFields.map((pf, index) => {
-        const fieldDef = pf.expand?.fieldId;
-        if (!fieldDef) return null;
+      // 1. Charger les fields du template (si le produit a un parent)
+      let templateFields: FieldWithValues[] = [];
+      if (product.parentId) {
+        setTemplateId(product.parentId);
+        const templateProductFields = await testProductService.getProductFields(product.parentId);
+        
+        templateFields = templateProductFields.map((tpf) => {
+          const fieldDef = tpf.expand?.fieldId;
+          if (!fieldDef) return null;
 
-        return {
-          ...fieldDef,
-          productFieldId: pf.id,
-          value: pf.value || '',
-          images: pf.images || [],
-          isInherited: true,
-          isRequired: index < 3
-        };
-      }).filter(Boolean) as FieldWithValues[];
+          // Récupérer isRequired depuis la config du template
+          const isRequired = tpf.isRequired || false;
 
-      setFields(loadedFields);
+          if ( fieldDef.options ) {
+            try {
+              const options = JSON.parse(fieldDef.options || '[]');
+              if (!Array.isArray(options)) throw new Error("Options is not an array");
+              fieldDef.options = options;
+            } catch (error) {
+              console.error("Error parsing options:", error);
+              fieldDef.options = undefined;
+            }
+          }
+
+          // Chercher si le produit a déjà une valeur pour ce field
+          const productField = productFields.find(pf => pf.fieldId === fieldDef.id);
+
+          return {
+            ...fieldDef,
+            productFieldId: productField?.id,
+            value: productField?.value || '',
+            images: productField?.images || [],
+            isInherited: true,
+            isRequired
+          };
+        }).filter(Boolean) as FieldWithValues[];
+      }
+
+      // 2. Charger les fields spécifiques au product (non hérités du template)
+      const productOnlyFields: FieldWithValues[] = productFields
+        .filter(pf => !templateFields.find(tf => tf.id === pf.fieldId))
+        .map((pf) => {
+          const fieldDef = pf.expand?.fieldId;
+          if (!fieldDef) return null;
+
+          // Récupérer isRequired depuis la config du product
+          const isRequired = pf.isRequired || false;
+
+          if ( fieldDef.options ) {
+            try {
+              const options = JSON.parse(fieldDef.options || '[]');
+              if (!Array.isArray(options)) throw new Error("Options is not an array");
+              fieldDef.options = options;
+            } catch (error) {
+              console.error("Error parsing options:", error);
+              fieldDef.options = undefined;
+            }
+          }
+
+          return {
+            ...fieldDef,
+            productFieldId: pf.id,
+            value: pf.value || '',
+            images: pf.images || [],
+            isInherited: false,
+            isRequired
+          };
+        }).filter(Boolean) as FieldWithValues[];
+
+      // Combiner les fields du template et du product
+      setFields([...templateFields, ...productOnlyFields]);
 
       // Charger les stocks
       if (productStocks.length > 0) {
