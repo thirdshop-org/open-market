@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Label } from './ui/label';
 import ImagesField from './form/ImagesField';
 import SelectField from './form/SelectField';
+import TextField from './form/TextField';
+import NumberField from './form/NumberField';
 
 type Product = {
   id: string;
@@ -225,13 +227,13 @@ function fieldToComponent(field: FieldExpandWithProductField): React.ReactNode {
 
       const textFieldValue = field.expand.productFields[0];
 
-      return <TextField field={field} value={textFieldValue.value} isRequired={field.isRequired} />;
+      return <TextField label={field.label} value={textFieldValue.value} isRequired={field.isRequired} />;
 
     case FieldType.NUMBER:
 
       const numberFieldValue = field.expand.productFields[0];
 
-      return <NumberField field={field} value={numberFieldValue.value} isRequired={field.isRequired} />;
+      return <NumberField label={field.label} value={Number(numberFieldValue.value)} isRequired={field.isRequired} />;
     case FieldType.SELECT:
 
       const selectFieldValue = field.expand.productFields[0];
@@ -251,26 +253,4 @@ function fieldToComponent(field: FieldExpandWithProductField): React.ReactNode {
 
 
 
-function TextField({ field, value, isRequired }: { field: Field, value?: string, isRequired: boolean }) {
 
-  const [fieldValue, setFieldValue] = useState(value || '');
-
-  return (
-    <div>
-      <Label>{field.label} <span className="text-destructive" hidden={!isRequired}>*</span> </Label>
-      <Input type="text" value={fieldValue} onChange={(e) => setFieldValue(e.target.value)} required={isRequired} />
-    </div>
-  )
-
-}
-
-function NumberField({ field, value, isRequired }: { field: Field, value?: number, isRequired: boolean }) {
-  const [fieldValue, setFieldValue] = useState(value || 0);
-
-  return (
-    <div>
-      <Label>{field.label} <span className="text-destructive" hidden={!isRequired}>*</span> </Label>
-      <Input type="number" value={fieldValue} onChange={(e) => setFieldValue(Number(e.target.value))} required={isRequired} />
-    </div>
-  )
-}
