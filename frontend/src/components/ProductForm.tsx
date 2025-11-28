@@ -48,12 +48,36 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
   async function init() {
     setLoading(true);
     try {
-      // 1. Load Template Fields (Inherited)
-      // We need to find the fields associated with the template product
-      // The templateId passed is likely the ID of the testProduct that serves as template
+      let effectiveTemplateId = templateId;
 
+      // 1. Determine Template ID
+      if (templateId) {
+        // Verify it exists
+        try {
+          await testProductService.getProduct(templateId);
+        } catch (error) {
+          console.error("Template not found:", error);
+          alert("Template not found. Falling back to default.");
+          effectiveTemplateId = ""; // Trigger fallback
+        }
+      }
+
+      if (!effectiveTemplateId) {
+        // Fallback to Mother Template
+        try {
+          const motherTemplate = await testProductService.getMotherTemplate();
+          effectiveTemplateId = motherTemplate.id;
+          console.log("Using Mother Template:", effectiveTemplateId);
+        } catch (error) {
+          console.error("No mother template found:", error);
+          alert("No default template found. Please contact admin.");
+          return; // Cannot proceed without a template structure
+        }
+      }
+
+      // 2. Load Template Fields (Inherited)
       // Get all product fields for the template
-      const templateProductFields = await testProductService.getProductFields(templateId);
+      const templateProductFields = await testProductService.getProductFields(effectiveTemplateId);
 
       // Map them to our state format
       const inheritedFields: FieldWithValues[] = templateProductFields.map(tpf => {
@@ -79,9 +103,8 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
   }
 
   useEffect(() => {
-    if (templateId) {
-      init();
-    }
+    // Always run init, even if templateId is undefined (to trigger fallback)
+    init();
   }, [templateId]);
 
   const handleFieldChange = (fieldId: string, value: string | number | string[]) => {
@@ -159,56 +182,6 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
         });
       } else {
         for (const variant of variants) {
-          // Find the productFieldIds corresponding to the variant's field values
-          // Wait, the variant definition is based on field *values*.
-          // But the stock links to *productFieldIds*.
-          // Since we created one productField per field definition (step 2),
-          // we actually link to the *same* productField records created above?
-          // NO.
-          // If variants exist, it implies that for "Color", we might have multiple values?
-          // The current form structure (step 2) assumes ONE value per field per product.
-          // "Color: Red".
-          // If I want "Red" and "Blue", do I create two products?
-          // OR does the "Color" field allow multiple values?
-
-          // In the current `ProductForm`, `SelectField` allows single selection.
-          // If the user wants variants, the "Color" field on the main product might need to be empty or multi-select?
-          // OR, the "Variants" define the specific values, and the main form defines the "Common" values.
-
-          // User said: "L'objectif c'est de forcer l'utilisateur à entrer des données structuré rattachant un label à une valeur."
-
-          // If I have variants, the "Color" field shouldn't have a single value in the main form if it varies.
-          // It should probably be left empty or marked as "Varies".
-
-          // Let's assume for now that for the fields used in variants, the main form value is ignored or serves as a default.
-          // AND that we need to create *additional* `testProductsFields` for the variants?
-          // OR does `testProductsStocks` link to the *main* `testProductsFields`?
-
-          // If `testProductsStocks` links to `testProductsFields`, and `testProductsFields` has a single value "Red".
-          // Then I can only have stock for "Red".
-          // I cannot have stock for "Blue" unless I create another `testProductsFields` record with value "Blue".
-
-          // So, if we have variants, we likely need to create `testProductsFields` records *specifically* for the variants,
-          // OR the `testProductsFields` are NOT 1-to-1 with the Product, but 1-to-N?
-
-          // `testProductsFields` has `productId`. So a product can have multiple fields.
-          // Can it have multiple fields with the SAME `fieldId`?
-          // Schema doesn't forbid it (no unique index on productId + fieldId).
-
-          // SO:
-          // For "Common" fields (e.g. Material: Cotton), we create one `testProductsField`.
-          // For "Variant" fields (e.g. Color: Red, Color: Blue), we create MULTIPLE `testProductsField` records?
-          // And then the Stock record links to the specific "Color: Red" record and "Size: M" record.
-
-          // This seems to be the way.
-
-          // So, my `handleSave` logic needs to be smarter.
-          // 1. Identify which fields are "Common" and which are "Variant-defining".
-          // 2. For Common fields, create one `testProductsField`.
-          // 3. For Variants, iterate through variants.
-          //    For each variant, check if we already created a `testProductsField` for that value (e.g. Red).
-          //    If not, create it.
-          //    Then link the stock to these `testProductsField` IDs.
 
           const variantFieldIds = Object.keys(variant.fieldValues);
           const relevantProductFieldIds: string[] = [];
@@ -461,7 +434,7 @@ function renderField(field: FieldWithValues, onChange: (id: string, val: any) =>
           label={field.label}
           value={field.value}
           options={field.options || []}
-          onChange={(val) => onChange(field.id, val)}
+          // onChange={(val) => onChange(field.id, val)}
         />
       );
     case FieldType.IMAGES:

@@ -18,6 +18,7 @@ export interface TestField {
 
 export interface TestProduct {
     id: string;
+    parentId?: string; // Added as per user request
     created: string;
     updated: string;
 }
@@ -48,6 +49,10 @@ export const testProductService = {
     // Products
     async getProduct(id: string) {
         return await pb.collection('testProducts').getOne<TestProduct>(id);
+    },
+    async getMotherTemplate() {
+        // Fetch the first product that has NO parentId
+        return await pb.collection('testProducts').getFirstListItem<TestProduct>('parentId = ""');
     },
     async createProduct(data: Partial<TestProduct>) {
         return await pb.collection('testProducts').create<TestProduct>(data);

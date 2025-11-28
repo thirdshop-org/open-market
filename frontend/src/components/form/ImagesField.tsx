@@ -33,7 +33,7 @@ export default function ImagesField({
     // Notify parent of changes
     useEffect(() => {
         onChange?.(imageList);
-    }, [imageList, onChange]);
+    }, [imageList]);
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const files = Array.from(e.target.files || []);
