@@ -3,12 +3,19 @@ import Seller from '@/layouts/dashboard/seller.astro';
 import { ProductListingOnline } from '@/components/ProductListingOnline';
 import { Button } from '@/components/ui/button';
 import { ProductForm } from '@/components/ProductForm';
+
+// Activer le SSR pour récupérer les paramètres d'URL
+export const prerender = false;
+
 const template = {
   title: "Ajouter un produit - Dashboard - Open Market",
 };
+
+// Récupérer le templateId depuis les paramètres de l'URL
+const templateId = Astro.url.searchParams.get('templateId');
 ---
 
 <Seller title={template.title} pageTitle="Ajouter un produit">
-  <ProductForm client:load />
+  <ProductForm client:load templateId={templateId || undefined} />
 </Seller>
 

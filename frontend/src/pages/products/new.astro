@@ -2,6 +2,12 @@
 import '../../styles/global.css';
 import { Navbar } from '@/components/Navbar';
 import { ProductForm } from '@/components/ProductForm';
+
+// Activer le SSR pour récupérer les paramètres d'URL
+export const prerender = false;
+
+// Récupérer le templateId depuis les paramètres de l'URL
+const templateId = Astro.url.searchParams.get('templateId');
 ---
 
 <html lang="fr">
@@ -25,7 +31,7 @@ import { ProductForm } from '@/components/ProductForm';
 				</p>
 			</div>
 			
-			<ProductForm client:load />
+			<ProductForm client:load templateId={templateId || undefined} />
 		</main>
 
 		<footer class="border-t py-8 mt-20">
