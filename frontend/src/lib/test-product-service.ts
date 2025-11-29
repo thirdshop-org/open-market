@@ -32,9 +32,6 @@ export interface TestProductField {
     isRequired?: boolean;
     created: string;
     updated: string;
-    expand?: {
-        fieldId?: TestField;
-    };
 }
 
 export interface TestProductStock {

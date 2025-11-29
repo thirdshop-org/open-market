@@ -25,11 +25,6 @@ export default function ImagesField({
     const remainingSlots = maxImages - imageList.length;
     const canAddMore = imageList.length < maxImages;
 
-    // Sync internal state with props if props change (optional, but good for controlled/uncontrolled hybrid)
-    useEffect(() => {
-        setImageList(images);
-    }, [images]);
-
     // Notify parent of changes
     useEffect(() => {
         onChange?.(imageList);
