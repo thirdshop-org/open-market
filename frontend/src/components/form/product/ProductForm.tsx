@@ -6,10 +6,8 @@ import {
   type TestField,
   FieldType
 } from '../../../lib/test-product-service';
-import { StepIndicator } from './StepIndicator';
 import { RequiredInformationsForm } from './RequiredInformationsForm';
 import { CustomProductInformationsForm } from './CustomProductInformationsForm';
-import { StockConfigurationForm } from './StockConfigurationForm';
 
 // Helper type for form state
 type FieldWithValues = TestField & {
@@ -20,8 +18,6 @@ type FieldWithValues = TestField & {
   isRequired?: boolean;
 }
 
-type Step = 1 | 2 | 3;
-
 type Variant = {
   id: string;
   quantity: number;
@@ -30,39 +26,17 @@ type Variant = {
 
 export function ProductForm({ productId: initialProductId, templateId: propTemplateId }: { productId?: string, templateId?: string }) {
   const [loading, setLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState<Step>(1);
 
   // PRODUCT CONFIGURATION
   const [productId, setProductId] = useState<string | undefined>(initialProductId);
+  const [product, setProduct] = useState<TestProduct | undefined>(undefined);
   const [productFields, setProductFields] = useState<FieldWithValues[]>([]);
 
   // TEMPLATE CONFIGURATION
   const [templateId, setTemplateId] = useState<string | undefined>(propTemplateId);
+  const [template, setTemplate] = useState<TestProduct | undefined>(undefined);
+  const [templateFields, setTemplateFields] = useState<FieldWithValues[]>([]);
   const [fields, setFields] = useState<FieldWithValues[]>([]);
-
-  // STOCK CONFIGURATION
-  const [stockMode, setStockMode] = useState<'global' | 'variants'>('global');
-  const [variants, setVariants] = useState<Variant[]>([]);
-  const [globalStock, setGlobalStock] = useState<number>(0);
-
-  async function loadTemplateFields(templateId: string) {
-    const templateFields = await testProductService.getProductFields(templateId);
-
-    return templateFields.map((tpf, index) => {
-      const fieldDef = tpf.expand?.fieldId;
-      if (!fieldDef) return null;
-      return fieldDef;
-    }).filter(Boolean) as FieldWithValues[];
-  }
-
-  async function loadTemplateProductFields(templateId: string) {
-    const templateProductFields = await testProductService.getProductFields(templateId)
-    return templateProductFields.map((tpf, index) => {
-      const fieldDef = tpf.expand?.fieldId;
-      if (!fieldDef) return null;
-      return fieldDef;
-    }).filter(Boolean) as FieldWithValues[];
-  }
 
   // Récupérer le templateId depuis l'URL au montage
   useEffect(() => {
@@ -79,177 +53,62 @@ export function ProductForm({ productId: initialProductId, templateId: propTempl
   async function init() {
     setLoading(true);
     try {
-      console.log("init", productId, templateId);
-      let effectiveTemplateId = templateId;
 
-      // Si on a un productId, charger les données existantes
-      if (productId) {
-        await loadExistingProduct(productId);
+      if ( !templateId && !productId ) {
+        
+        const template = await testProductService.getMotherTemplate();
+        setTemplate(template);
+        const templateFields = await testProductService.getProductFields(template.id);
+        setTemplateFields(templateFields);
+        
+        const product = await testProductService.createProduct({
+          parentId: template.id
+        });
+        setProduct(product);
+        const productFields = await testProductService.getProductFields(product.id);
+        setProductFields(productFields);
         return;
       }
 
-      // 1. Determine Template ID
-      if (templateId) {
-        // Verify it exists
-        try {
-          await testProductService.getProduct(templateId);
-        } catch (error) {
-          console.error("Template not found:", error);
-          alert("Template not found. Falling back to default.");
-          effectiveTemplateId = ""; // Trigger fallback
-        }
+      if ( templateId && !productId ) {
+        
+        const template = await testProductService.getProduct(templateId);
+        setTemplate(template);
+        const templateFields = await testProductService.getProductFields(template.id);
+        setTemplateFields(templateFields);
+
+        const product = await testProductService.createProduct({
+          parentId: template.id
+        });
+        setProduct(product);
+        const productFields = await testProductService.getProductFields(product.id);
+        setProductFields(productFields);
+        return;
       }
 
-      if (!effectiveTemplateId) {
-        // Fallback to Mother Template
-        try {
-          const motherTemplate = await testProductService.getMotherTemplate();
-          effectiveTemplateId = motherTemplate.id;
-          console.log("Using Mother Template:", effectiveTemplateId);
-        } catch (error) {
-          console.error("No mother template found:", error);
-          alert("No default template found. Please contact admin.");
-          return;
+      if ( productId && !templateId ) {
+        const product = await testProductService.getProduct(productId);
+        setProduct(product);
+        if ( !product.parentId ) {
+          throw new Error('Product has no parentId');
         }
+        const productFields = await testProductService.getProductFields(product.id);
+        setProductFields(productFields);
+
+        const template = await testProductService.getProduct(product.parentId);
+        setTemplate(template);
+        const templateFields = await testProductService.getProductFields(template.id);
+        setTemplateFields(templateFields);
+        return;
       }
 
-      setTemplateId(effectiveTemplateId);
-
-      // 2. Load Template Fields (Inherited) - avec leur config isRequired
-      const templateProductFields = await testProductService.getProductFields(effectiveTemplateId);
-
-      // Map them to our state format
-      const inheritedFields: FieldWithValues[] = templateProductFields.map((tpf) => {
-        const fieldDef = tpf.expand?.fieldId;
-        if (!fieldDef) return null;
-
-        // Récupérer isRequired depuis la config du template
-        const isRequired = tpf.isRequired || false;
-
-        if ( fieldDef.options ) {
-          try {
-            const options = JSON.parse(fieldDef.options || '[]');
-            if (!Array.isArray(options)) throw new Error("Options is not an array");
-            console.log("options", options,fieldDef.options);
-            fieldDef.options = options;
-          } catch (error) {
-            console.error("Error parsing options:", error);
-            fieldDef.options = undefined;
-          }
-        }
-
-        return {
-          ...fieldDef,
-          productFieldId: undefined,
-          value: '',
-          images: [],
-          isInherited: true,
-          isRequired
-        };
-      }).filter(Boolean) as FieldWithValues[];
-
-      setFields(inheritedFields);
+      throw new Error('No templateId or productId provided');
 
     } catch (error) {
       console.error('Error initializing form:', error);
+      alert('Error initializing form');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function loadExistingProduct(id: string) {
-    try {
-      const product = await testProductService.getProduct(id);
-      const productFields = await testProductService.getProductFields(id);
-      const productStocks = await testProductService.getProductStocks(id);
-
-      // 1. Charger les fields du template (si le produit a un parent)
-      let templateFields: FieldWithValues[] = [];
-      if (product.parentId) {
-        setTemplateId(product.parentId);
-        const templateProductFields = await testProductService.getProductFields(product.parentId);
-        
-        templateFields = templateProductFields.map((tpf) => {
-          const fieldDef = tpf.expand?.fieldId;
-          if (!fieldDef) return null;
-
-          // Récupérer isRequired depuis la config du template
-          const isRequired = tpf.isRequired || false;
-
-          if ( fieldDef.options ) {
-            try {
-              const options = JSON.parse(fieldDef.options || '[]');
-              if (!Array.isArray(options)) throw new Error("Options is not an array");
-              fieldDef.options = options;
-            } catch (error) {
-              console.error("Error parsing options:", error);
-              fieldDef.options = undefined;
-            }
-          }
-
-          // Chercher si le produit a déjà une valeur pour ce field
-          const productField = productFields.find(pf => pf.fieldId === fieldDef.id);
-
-          return {
-            ...fieldDef,
-            productFieldId: productField?.id,
-            value: productField?.value || '',
-            images: productField?.images || [],
-            isInherited: true,
-            isRequired
-          };
-        }).filter(Boolean) as FieldWithValues[];
-      }
-
-      // 2. Charger les fields spécifiques au product (non hérités du template)
-      const productOnlyFields: FieldWithValues[] = productFields
-        .filter(pf => !templateFields.find(tf => tf.id === pf.fieldId))
-        .map((pf) => {
-          const fieldDef = pf.expand?.fieldId;
-          if (!fieldDef) return null;
-
-          // Récupérer isRequired depuis la config du product
-          const isRequired = pf.isRequired || false;
-
-          if ( fieldDef.options ) {
-            try {
-              const options = JSON.parse(fieldDef.options || '[]');
-              if (!Array.isArray(options)) throw new Error("Options is not an array");
-              fieldDef.options = options;
-            } catch (error) {
-              console.error("Error parsing options:", error);
-              fieldDef.options = undefined;
-            }
-          }
-
-          return {
-            ...fieldDef,
-            productFieldId: pf.id,
-            value: pf.value || '',
-            images: pf.images || [],
-            isInherited: false,
-            isRequired
-          };
-        }).filter(Boolean) as FieldWithValues[];
-
-      // Combiner les fields du template et du product
-      setFields([...templateFields, ...productOnlyFields]);
-
-      // Charger les stocks
-      if (productStocks.length > 0) {
-        if (productStocks[0].productFieldIds.length === 0) {
-          setStockMode('global');
-          setGlobalStock(productStocks[0].quantity);
-        } else {
-          setStockMode('variants');
-          // TODO: Charger les variants
-        }
-      }
-
-      // Si on a des données, on peut passer au step 2 ou 3
-      setCurrentStep(2);
-    } catch (error) {
-      console.error('Error loading product:', error);
     }
   }
 
@@ -470,67 +329,27 @@ export function ProductForm({ productId: initialProductId, templateId: propTempl
   );
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto p-6">
-      {/* Step Indicator */}
-      <StepIndicator currentStep={currentStep} />
+    <div className="space-y-8 w-full mx-auto p-6">
 
-      {/* Step 1: Required Fields from Template */}
-      {currentStep === 1 && (
-        <RequiredInformationsForm 
-          fields={fields}
-          onChange={handleFieldChange}
-        />
-      )}
+      {/* Template fields */}
+      <RequiredInformationsForm 
+        fields={templateFields}
+        onChange={handleFieldChange}
+      />
 
-      {/* Step 2: Additional Information */}
-      {currentStep === 2 && (
+      {/* Product fields */}
         <CustomProductInformationsForm 
-          fields={fields}
+          fields={productFields}
           onChange={handleFieldChange}
           onAddField={handleAddNewField}
           onRemoveField={handleRemoveField}
         />
-      )}
-
-      {/* Step 3: Stock Configuration */}
-      {currentStep === 3 && (
-        <StockConfigurationForm 
-          fields={fields}
-          stockMode={stockMode}
-          globalStock={globalStock}
-          variants={variants}
-          onStockModeChange={setStockMode}
-          onGlobalStockChange={setGlobalStock}
-          onAddVariant={(variant) => setVariants(prev => [...prev, variant])}
-          onRemoveVariant={(variantId) => setVariants(prev => prev.filter(v => v.id !== variantId))}
-        />
-      )}
 
       {/* Navigation Buttons */}
       <div className="flex justify-between gap-4 pt-6 border-t">
-        <div>
-          {currentStep > 1 && (
-            <Button variant="outline" onClick={handlePreviousStep} disabled={loading}>
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Précédent
-            </Button>
-          )}
-        </div>
-        <div className="flex gap-4">
-          <Button variant="outline" onClick={() => window.history.back()}>
-            Annuler
-          </Button>
-          {currentStep < 3 ? (
-            <Button onClick={handleNextStep} disabled={loading}>
-              {loading ? 'Sauvegarde...' : 'Suivant'}
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          ) : (
-            <Button onClick={handleSave} disabled={loading}>
-              {loading ? 'Sauvegarde...' : 'Terminer et publier'}
-            </Button>
-          )}
-        </div>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? 'Sauvegarde...' : 'Terminer et publier'}
+        </Button>
       </div>
     </div>
   );

@@ -26,6 +26,10 @@ const data = {
           title: "En ligne",
           url: "/dashboard/products-online",
         },
+        {
+          title: "Nouveau produit",
+          url: "/dashboard/products/new",
+        }
       ],
     },
     {
