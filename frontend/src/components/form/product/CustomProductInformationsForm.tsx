@@ -11,11 +11,11 @@ import TextField from '../TextField';
 import NumberField from '../NumberField';
 
 type FieldWithValues = TestField & {
-  productFieldId?: string;
+  productFieldId: string;
   value?: string;
   images?: string[];
   isInherited: boolean;
-  isRequired?: boolean;
+  isRequired: boolean;
 }
 
 interface CustomProductInformationsFormProps {

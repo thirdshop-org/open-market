@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '../../ui/button';
 import {
   testProductService,
@@ -12,7 +12,7 @@ import { CustomProductInformationsForm } from './CustomProductInformationsForm';
 
 // Helper type for form state
 type FieldWithValues = TestField & {
-  productFieldId?: string;
+  productFieldId: string; // ID of the record in testProductsFields
   value?: string;
   images?: string[];
   isInherited: boolean;
@@ -21,6 +21,7 @@ type FieldWithValues = TestField & {
 
 export function ProductForm({ productId, templateId }: { productId?: string, templateId?: string }) {
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // PRODUCT CONFIGURATION]
   const [product, setProduct] = useState<TestProduct | undefined>(undefined);
@@ -29,10 +30,21 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
 
   // Fields
   const [fields, setFields] = useState<FieldWithValues[]>([]);
+  
+  // Debounce timer for auto-save
+  const saveTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Récupérer le templateId depuis l'URL au montage
   useEffect(() => {
     init();
+  }, []);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      saveTimerRef.current.forEach(timer => clearTimeout(timer));
+      saveTimerRef.current.clear();
+    };
   }, []);
 
   function testFieldsToFieldsWithValues(testFields: TestField[], productFields: TestProductField[], templateId?: string): FieldWithValues[] {
@@ -53,6 +65,7 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
       
       productsFieldsMap.set(field, {
         ...field,
+        productFieldId: productField.id, // Store the productField ID for updates
         value: productField.value || '',
         images: productField.images || [],
         isRequired: productField.isRequired,
@@ -154,7 +167,8 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
     }
   }
 
-  const handleFieldChange = (fieldId: string, value: string | number | string[]) => {
+  const handleFieldChange = async (fieldId: string, value: string | number | string[]) => {
+    // Update local state immediately for better UX
     setFields(prev => prev.map(f => {
       if (f.id !== fieldId) return f;
 
@@ -164,6 +178,50 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
         return { ...f, value: String(value) };
       }
     }));
+
+    // Get the field to save
+    const field = fields.find(f => f.id === fieldId);
+    if (!field) return;
+
+    // Clear existing timer for this field
+    const existingTimer = saveTimerRef.current.get(fieldId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    // Set new timer to save after 1 second of inactivity
+    const newTimer = setTimeout(async () => {
+      try {
+        setSaving(true);
+        
+        if (field.type === FieldType.IMAGES) {
+          // For images, we need to use FormData
+          const formData = new FormData();
+          const images = value as string[];
+          
+          // If images is an array of File objects or URLs
+          // For now, assuming we're storing URLs as JSON
+          await testProductService.updateProductField(field.productFieldId, {
+            images: images
+          });
+        } else {
+          // For text/number/select fields
+          await testProductService.updateProductField(field.productFieldId, {
+            value: String(value)
+          });
+        }
+        
+        console.log(`✓ Champ "${field.label}" sauvegardé`);
+      } catch (error) {
+        console.error(`Erreur lors de la sauvegarde du champ "${field.label}":`, error);
+        alert(`Erreur lors de la sauvegarde du champ "${field.label}"`);
+      } finally {
+        setSaving(false);
+        saveTimerRef.current.delete(fieldId);
+      }
+    }, 1000); // 1 second debounce
+
+    saveTimerRef.current.set(fieldId, newTimer);
   };
 
   const handleAddNewField = async (label: string, type: FieldType, options?: string[]) => {
@@ -217,6 +275,13 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
 
   return (
     <div className="space-y-8 w-full mx-auto p-6">
+      {/* Auto-save indicator */}
+      {saving && (
+        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg flex items-center gap-2 z-50">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent"></div>
+          <span className="text-sm">Sauvegarde automatique...</span>
+        </div>
+      )}
 
       {/* Template fields */}
       <RequiredInformationsForm 
