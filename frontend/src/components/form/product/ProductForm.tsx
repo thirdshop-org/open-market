@@ -61,11 +61,18 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
 
     });
 
-    console.log(Array.from(productsFieldsMap.entries()));
-
     return Array.from(productsFieldsMap.values()).filter(field => field !== null);
 
   }
+
+  useEffect(() => {
+    if (product?.id || template?.id) {
+      const params = new URLSearchParams();
+      if (product?.id) params.append('productId', product.id);
+      if (template?.id) params.append('templateId', template.id);
+      window.history.pushState({}, '', `/dashboard/products/new?${params.toString()}`);
+    }
+  }, [product?.id, template?.id]);
 
   async function init() {
     setLoading(true);
@@ -161,6 +168,12 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
 
   const handleAddNewField = async (label: string, type: FieldType, options?: string[]) => {
     try {
+
+
+      if ( !product?.id ) {
+        throw new Error('Product ID is required');
+      }
+
       // 1. Create the global field definition
       const newField = await testProductService.createField({
         label,
@@ -168,14 +181,17 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
         options: type === FieldType.SELECT ? options : undefined
       });
 
-      // 2. Add to local state
-      setFields(prev => [...prev, {
-        ...newField,
+      const newProductField = await testProductService.createProductField({
+        productId: product.id,
+        fieldId: newField.id,
         value: '',
         images: [],
-        isInherited: false,
         isRequired: false
-      }]);
+      });
+
+
+      const newFields = testFieldsToFieldsWithValues([newField], [newProductField], product.id);
+      setFields(prev => [...prev, ...newFields]); 
     } catch (error) {
       console.error('Error creating field:', error);
     }
