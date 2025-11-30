@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Label } from '../ui/label';
 
+// Can be either a File (new upload) or a string URL (existing image)
+export type ImageValue = File | string;
+
 export interface ImagesFieldProps {
     label: string;
-    images?: string[];
+    images?: ImageValue[];
     isRequired?: boolean;
     maxImages?: number;
     acceptedFileTypes?: string[];
-    onChange?: (images: string[]) => void;
+    onChange?: (images: ImageValue[]) => void;
 }
 
 export default function ImagesField({
@@ -18,9 +21,12 @@ export default function ImagesField({
     acceptedFileTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
     onChange
 }: ImagesFieldProps) {
-    const [imageList, setImageList] = useState<string[]>(images);
+    const [imageList, setImageList] = useState<ImageValue[]>(images);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [error, setError] = useState<string>('');
+    
+    // Map to store object URLs for File objects (for cleanup)
+    const [objectUrls, setObjectUrls] = useState<Map<File, string>>(new Map());
 
     const remainingSlots = maxImages - imageList.length;
     const canAddMore = imageList.length < maxImages;
@@ -29,6 +35,13 @@ export default function ImagesField({
     useEffect(() => {
         onChange?.(imageList);
     }, [imageList]);
+    
+    // Cleanup object URLs on unmount
+    useEffect(() => {
+        return () => {
+            objectUrls.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [objectUrls]);
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const files = Array.from(e.target.files || []);
@@ -47,23 +60,36 @@ export default function ImagesField({
             return;
         }
 
-        // Convertir les fichiers en URLs
+        // Store File objects directly (no base64 conversion)
+        setImageList(prev => [...prev, ...files]);
+        
+        // Create object URLs for display
+        const newUrls = new Map(objectUrls);
         files.forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImageList(prev => {
-                    const newList = [...prev, reader.result as string];
-                    return newList;
-                });
-            };
-            reader.readAsDataURL(file);
+            if (!newUrls.has(file)) {
+                newUrls.set(file, URL.createObjectURL(file));
+            }
         });
+        setObjectUrls(newUrls);
 
         // Reset input
         e.target.value = '';
     }
 
     function handleRemoveImage(index: number) {
+        const imageToRemove = imageList[index];
+        
+        // If it's a File object, revoke its object URL
+        if (imageToRemove instanceof File) {
+            const url = objectUrls.get(imageToRemove);
+            if (url) {
+                URL.revokeObjectURL(url);
+                const newUrls = new Map(objectUrls);
+                newUrls.delete(imageToRemove);
+                setObjectUrls(newUrls);
+            }
+        }
+        
         setImageList(prev => prev.filter((_, i) => i !== index));
         setError('');
     }
@@ -83,10 +109,32 @@ export default function ImagesField({
 
         setImageList(newImages);
         setDraggedIndex(index);
+        
+        // Ensure object URLs are maintained for File objects after reorder
+        if (draggedImage instanceof File && !objectUrls.has(draggedImage)) {
+            const newUrls = new Map(objectUrls);
+            newUrls.set(draggedImage, URL.createObjectURL(draggedImage));
+            setObjectUrls(newUrls);
+        }
     }
 
     function handleDragEnd() {
         setDraggedIndex(null);
+    }
+    
+    // Helper function to get display URL for an image (File or string)
+    function getImageUrl(image: ImageValue): string {
+        if (typeof image === 'string') {
+            return image; // Already a URL
+        } else {
+            // It's a File - get or create object URL
+            let url = objectUrls.get(image);
+            if (!url) {
+                url = URL.createObjectURL(image);
+                setObjectUrls(new Map(objectUrls.set(image, url)));
+            }
+            return url;
+        }
     }
 
     return (
@@ -125,7 +173,7 @@ export default function ImagesField({
               `}
                         >
                             <img
-                                src={image}
+                                src={getImageUrl(image)}
                                 alt={`Image ${index + 1}`}
                                 className="w-full h-full object-cover"
                             />

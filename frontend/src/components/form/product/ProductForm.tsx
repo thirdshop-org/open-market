@@ -9,12 +9,14 @@ import {
 } from '../../../lib/test-product-service';
 import { RequiredInformationsForm } from './RequiredInformationsForm';
 import { CustomProductInformationsForm } from './CustomProductInformationsForm';
+import { pb } from '../../../lib/pocketbase';
+import type { ImageValue } from '../ImagesField';
 
 // Helper type for form state
 type FieldWithValues = TestField & {
   productFieldId: string; // ID of the record in testProductsFields
   value?: string;
-  images?: string[];
+  images?: ImageValue[]; // Can be File (new) or string URL (existing)
   isInherited: boolean;
   isRequired: boolean;
 }
@@ -63,11 +65,24 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
         throw new Error('Field already exists');
       }
       
+      // Convert image filenames to full URLs for existing images
+      let imageValues: ImageValue[] = [];
+      if (field.type === FieldType.IMAGES && productField.images && productField.images.length > 0) {
+        imageValues = productField.images.map(filename => {
+          // If it's already a full URL or a File, keep it as is
+          if (filename.startsWith('http') || filename.startsWith('data:')) {
+            return filename;
+          }
+          // Otherwise, construct the PocketBase URL
+          return pb.files.getUrl(productField, filename);
+        });
+      }
+      
       productsFieldsMap.set(field, {
         ...field,
         productFieldId: productField.id, // Store the productField ID for updates
         value: productField.value || '',
-        images: productField.images || [],
+        images: imageValues,
         isRequired: productField.isRequired,
         isInherited: productField.productId === templateId
       });
@@ -90,6 +105,23 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
   async function init() {
     setLoading(true);
     try {
+      
+      if ( templateId && productId ) {
+        const template = await testProductService.getProduct(templateId);
+        setTemplate(template);
+        const product = await testProductService.getProduct(productId);
+        setProduct(product);
+
+        const productFields = await testProductService.getProductFields(product.id);
+        const templateProductFields = await testProductService.getProductFields(template.id);
+
+        const allFields = await testProductService.getFields();
+
+        const fields = testFieldsToFieldsWithValues(allFields, [...templateProductFields, ...productFields], template.id);
+        setFields(fields);
+
+        return;
+      }
 
       if ( !templateId && !productId ) {
 
@@ -167,13 +199,13 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
     }
   }
 
-  const handleFieldChange = async (fieldId: string, value: string | number | string[]) => {
+  const handleFieldChange = async (fieldId: string, value: string | number | ImageValue[]) => {
     // Update local state immediately for better UX
     setFields(prev => prev.map(f => {
       if (f.id !== fieldId) return f;
 
       if (f.type === FieldType.IMAGES) {
-        return { ...f, images: value as string[] };
+        return { ...f, images: value as ImageValue[] };
       } else {
         return { ...f, value: String(value) };
       }
@@ -195,15 +227,30 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
         setSaving(true);
         
         if (field.type === FieldType.IMAGES) {
-          // For images, we need to use FormData
+          const images = value as ImageValue[];
           const formData = new FormData();
-          const images = value as string[];
           
-          // If images is an array of File objects or URLs
-          // For now, assuming we're storing URLs as JSON
-          await testProductService.updateProductField(field.productFieldId, {
-            images: images
+          // Process each image
+          images.forEach((img) => {
+            if (img instanceof File) {
+              // It's a new File object - add it directly to FormData
+              formData.append('images', img);
+            } else if (typeof img === 'string') {
+              // It's an existing URL - extract just the filename
+              if (img.startsWith('http')) {
+                // PocketBase URLs are like: http://127.0.0.1:8090/api/files/COLLECTION/RECORD/FILENAME.ext
+                const filename = img.split('/').pop()?.split('?')[0] || '';
+                if (filename) {
+                  formData.append('images', filename);
+                }
+              } else {
+                // It's already a filename
+                formData.append('images', img);
+              }
+            }
           });
+          
+          await testProductService.updateProductField(field.productFieldId, formData);
         } else {
           // For text/number/select fields
           await testProductService.updateProductField(field.productFieldId, {

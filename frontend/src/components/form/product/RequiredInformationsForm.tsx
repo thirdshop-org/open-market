@@ -1,5 +1,5 @@
 import { FieldType, type TestField } from '@/lib/test-product-service';
-import ImagesField from '../ImagesField';
+import ImagesField, { type ImageValue } from '../ImagesField';
 import SelectField from '../SelectField';
 import TextField from '../TextField';
 import NumberField from '../NumberField';
@@ -7,14 +7,14 @@ import NumberField from '../NumberField';
 type FieldWithValues = TestField & {
   productFieldId: string;
   value?: string;
-  images?: string[];
+  images?: ImageValue[];
   isInherited: boolean;
   isRequired: boolean;
 }
 
 interface RequiredInformationsFormProps {
   fields: FieldWithValues[];
-  onChange: (fieldId: string, value: string | number | string[]) => void;
+  onChange: (fieldId: string, value: string | number | ImageValue[]) => void;
 }
 
 export function RequiredInformationsForm({ fields, onChange }: RequiredInformationsFormProps) {

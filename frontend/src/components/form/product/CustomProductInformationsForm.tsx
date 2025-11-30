@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2 } from 'lucide-react';
 import { FieldType, type TestField } from '@/lib/test-product-service';
-import ImagesField from '../ImagesField';
+import ImagesField, { type ImageValue } from '../ImagesField';
 import SelectField from '../SelectField';
 import TextField from '../TextField';
 import NumberField from '../NumberField';
@@ -13,14 +13,14 @@ import NumberField from '../NumberField';
 type FieldWithValues = TestField & {
   productFieldId: string;
   value?: string;
-  images?: string[];
+  images?: ImageValue[];
   isInherited: boolean;
   isRequired: boolean;
 }
 
 interface CustomProductInformationsFormProps {
   fields: FieldWithValues[];
-  onChange: (fieldId: string, value: string | number | string[]) => void;
+  onChange: (fieldId: string, value: string | number | ImageValue[]) => void;
   onAddField: (label: string, type: FieldType, options?: string[]) => Promise<void>;
   onRemoveField: (fieldId: string) => void;
 }

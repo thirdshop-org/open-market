@@ -18,6 +18,6 @@ const productId = Astro.url.searchParams.get('productId');
 ---
 
 <Seller title={template.title} pageTitle="Ajouter un produit">
-  <ProductForm client:load templateId={templateId || undefined} />
+  <ProductForm client:load templateId={templateId || undefined} productId={productId || undefined} />
 </Seller>
 
