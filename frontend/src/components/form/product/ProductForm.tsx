@@ -16,13 +16,13 @@ type FieldWithValues = TestField & {
   value?: string;
   images?: string[];
   isInherited: boolean;
-  isRequired?: boolean;
+  isRequired: boolean;
 }
 
 export function ProductForm({ productId, templateId }: { productId?: string, templateId?: string }) {
   const [loading, setLoading] = useState(false);
 
-  // PRODUCT CONFIGURATION
+  // PRODUCT CONFIGURATION]
   const [product, setProduct] = useState<TestProduct | undefined>(undefined);
   // TEMPLATE CONFIGURATION
   const [template, setTemplate] = useState<TestProduct | undefined>(undefined);
@@ -35,34 +35,35 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
     init();
   }, []);
 
-  function testFieldsToFieldsWithValues(testFields: TestField[], productFields: TestProductField[]): FieldWithValues[] {
+  function testFieldsToFieldsWithValues(testFields: TestField[], productFields: TestProductField[], templateId?: string): FieldWithValues[] {
 
-    return testFields.map((testField) => {
-      const productField = productFields.find((productField) => productField.fieldId === testField.id);
+    const productsFieldsMap = new Map<TestField, FieldWithValues | null>();
 
-      if ( !productField ) return null;
+    productFields.forEach((productField) => {
 
-      try {
-        if ( testField.options ) {
-          testField.options = JSON.parse( testField.options );
-          if ( !Array.isArray( testField.options ) ) throw new Error('Options is not an array')
-        } else { 
-          testField.options = [];
-        }
-        
-      } catch (error) {
-        console.error(error);
-        testField.options = []
+      const field = testFields.find((field) => field.id === productField.fieldId);
+
+      if ( !field ) {
+        throw new Error('Field not found');
       }
 
-      return {
-        ...testField,
-        value: productField?.value || '',
-        images: productField?.images || [],
-        isInherited: false,
-        isRequired: false
-      };
-    }).filter( field => field !== null )
+      if ( productsFieldsMap.has(field) ) {
+        throw new Error('Field already exists');
+      }
+      
+      productsFieldsMap.set(field, {
+        ...field,
+        value: productField.value || '',
+        images: productField.images || [],
+        isRequired: productField.isRequired,
+        isInherited: productField.productId === templateId
+      });
+
+    });
+
+    console.log(Array.from(productsFieldsMap.entries()));
+
+    return Array.from(productsFieldsMap.values()).filter(field => field !== null);
 
   }
 
@@ -70,10 +71,8 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
     setLoading(true);
     try {
 
-      const allFields = await testProductService.getFields();
-
       if ( !templateId && !productId ) {
-        
+
         const template = await testProductService.getMotherTemplate();
         setTemplate(template);
 
@@ -86,7 +85,9 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
 
         const productFields = await testProductService.getProductFields(product.id);
 
-        const fields = testFieldsToFieldsWithValues(allFields, [...templateProductFields, ...productFields]);
+        const allFields = await testProductService.getFields();
+
+        const fields = testFieldsToFieldsWithValues(allFields, [...templateProductFields, ...productFields], template?.id);
         setFields(fields);
 
         return;
@@ -106,8 +107,10 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
 
         setProduct(product);
         const productFields = await testProductService.getProductFields(product.id);
+
+        const allFields = await testProductService.getFields();
         
-        const fields = testFieldsToFieldsWithValues(allFields, [...templateProductFields, ...productFields]);
+        const fields = testFieldsToFieldsWithValues(allFields, [...templateProductFields, ...productFields], template?.id);
         setFields(fields);
 
         return;
@@ -125,8 +128,10 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
         setTemplate(template);
 
         const templateProductFields = await testProductService.getProductFields(template.id);
+
+        const allFields = await testProductService.getFields();
         
-        const fields = testFieldsToFieldsWithValues(allFields, [...templateProductFields, ...productFields]);
+        const fields = testFieldsToFieldsWithValues(allFields, [...templateProductFields, ...productFields], template?.id);
         setFields(fields);
 
         return;

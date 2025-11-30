@@ -29,7 +29,7 @@ export interface TestProductField {
     fieldId: string;
     value?: string;
     images?: string[];
-    isRequired?: boolean;
+    isRequired: boolean;
     created: string;
     updated: string;
 }
