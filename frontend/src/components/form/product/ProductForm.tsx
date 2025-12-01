@@ -131,7 +131,8 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
         const templateProductFields = await testProductService.getProductFields(template.id);
         
         const product = await testProductService.createProduct({
-          parentId: template.id
+          parentId: template.id,
+          createdBy: pb.authStore.model?.id
         });
         setProduct(product);
 
@@ -154,7 +155,8 @@ export function ProductForm({ productId, templateId }: { productId?: string, tem
         const templateProductFields = await testProductService.getProductFields(template.id);
 
         const product = await testProductService.createProduct({
-          parentId: template.id
+          parentId: template.id,
+          createdBy: pb.authStore.model?.id
         });
 
         setProduct(product);

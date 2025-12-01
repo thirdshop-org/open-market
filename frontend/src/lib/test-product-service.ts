@@ -19,6 +19,7 @@ export interface TestField {
 export interface TestProduct {
     id: string;
     parentId?: string; // Added as per user request
+    createdBy?: string;
     created: string;
     updated: string;
 }
