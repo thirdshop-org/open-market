@@ -23,7 +23,7 @@ const data = {
       url: "#",
       items: [
         {
-          title: "En ligne",
+          title: "Liste des produits",
           url: "/dashboard/products-online",
         },
         {

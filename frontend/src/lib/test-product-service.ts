@@ -53,6 +53,12 @@ export const testProductService = {
         // Fetch the first product that has NO parentId
         return await pb.collection('testProducts').getFirstListItem<TestProduct>('parentId = ""');
     },
+    async getUserProducts(userId: string) {
+        return await pb.collection('testProducts').getFullList<TestProduct>({
+            filter: `createdBy = "${userId}"`,
+            sort: '-created',
+        });
+    },
     async createProduct(data: Partial<TestProduct>) {
         return await pb.collection('testProducts').create<TestProduct>(data);
     },
